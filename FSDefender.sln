@@ -1,0 +1,73 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27428.2037
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FSD", "FSDefender\FSDefender.vcxproj", "{F903A923-70DC-4726-BEC2-BD174FD2220D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "FIlter", "FIlter", "{6877CD56-A30C-4D90-9FAD-E52DBC574A04}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "User", "User", "{F63D630E-9D2A-47CC-A4A7-0AE57109255B}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FSDManager", "FSDManager\FSDManager.vcxproj", "{882EF3BB-3A45-41E3-8704-9CD25C75A378}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|ARM = Debug|ARM
+		Debug|ARM64 = Debug|ARM64
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|ARM = Release|ARM
+		Release|ARM64 = Release|ARM64
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|ARM.ActiveCfg = Debug|ARM
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|ARM.Build.0 = Debug|ARM
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|ARM.Deploy.0 = Debug|ARM
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|ARM64.ActiveCfg = Debug|ARM64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|ARM64.Build.0 = Debug|ARM64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|ARM64.Deploy.0 = Debug|ARM64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|x64.ActiveCfg = Debug|x64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|x64.Build.0 = Debug|x64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|x64.Deploy.0 = Debug|x64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|x86.ActiveCfg = Debug|Win32
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|x86.Build.0 = Debug|Win32
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Debug|x86.Deploy.0 = Debug|Win32
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|ARM.ActiveCfg = Release|ARM
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|ARM.Build.0 = Release|ARM
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|ARM.Deploy.0 = Release|ARM
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|ARM64.ActiveCfg = Release|ARM64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|ARM64.Build.0 = Release|ARM64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|ARM64.Deploy.0 = Release|ARM64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|x64.ActiveCfg = Release|x64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|x64.Build.0 = Release|x64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|x64.Deploy.0 = Release|x64
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|x86.ActiveCfg = Release|Win32
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|x86.Build.0 = Release|Win32
+		{F903A923-70DC-4726-BEC2-BD174FD2220D}.Release|x86.Deploy.0 = Release|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Debug|ARM.ActiveCfg = Debug|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Debug|x64.ActiveCfg = Debug|x64
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Debug|x64.Build.0 = Debug|x64
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Debug|x86.ActiveCfg = Debug|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Debug|x86.Build.0 = Debug|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Release|ARM.ActiveCfg = Release|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Release|ARM64.ActiveCfg = Release|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Release|x64.ActiveCfg = Release|x64
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Release|x64.Build.0 = Release|x64
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Release|x86.ActiveCfg = Release|Win32
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F903A923-70DC-4726-BEC2-BD174FD2220D} = {6877CD56-A30C-4D90-9FAD-E52DBC574A04}
+		{882EF3BB-3A45-41E3-8704-9CD25C75A378} = {F63D630E-9D2A-47CC-A4A7-0AE57109255B}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8B7DD4B2-FF56-4739-8E69-BCD2E8AEDBA0}
+	EndGlobalSection
+EndGlobal
