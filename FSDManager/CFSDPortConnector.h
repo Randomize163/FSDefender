@@ -3,6 +3,8 @@
 #include <windows.h>
 #include <fltuser.h>
 
+#define MAX_RECIEVE_BUFFER_SIZE 256
+
 struct CFSDPortConnectorMessage
 {
 	union
@@ -11,11 +13,11 @@ struct CFSDPortConnectorMessage
 		FILTER_REPLY_HEADER     aReplyHeader;
 	};
 
-	BYTE pBuffer[256];
+	BYTE pBuffer[MAX_RECIEVE_BUFFER_SIZE];
 };
 
-static_assert(sizeof(CFSDPortConnectorMessage) == sizeof(FILTER_MESSAGE_HEADER) + 256, "Invalid size");
-static_assert(sizeof(CFSDPortConnectorMessage) == sizeof(FILTER_REPLY_HEADER) + 256, "Invalid size");
+static_assert(sizeof(CFSDPortConnectorMessage) == sizeof(FILTER_MESSAGE_HEADER) + MAX_RECIEVE_BUFFER_SIZE, "Invalid size");
+static_assert(sizeof(CFSDPortConnectorMessage) == sizeof(FILTER_REPLY_HEADER) + MAX_RECIEVE_BUFFER_SIZE, "Invalid size");
 
 class CFSDPortConnector
 {

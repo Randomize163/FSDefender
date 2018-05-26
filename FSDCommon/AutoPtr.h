@@ -54,6 +54,11 @@ public:
 		m_p = NULL;
 	}
 
+	T* LetPtr() const
+	{
+		return m_p;
+	}
+
 	bool operator!() const
 	{
 		return m_p == NULL;

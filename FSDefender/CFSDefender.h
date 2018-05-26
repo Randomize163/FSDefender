@@ -17,6 +17,11 @@ public:
 
 	//void Close();
 
+	LPCWSTR GetScanDirectoryName() const
+	{
+		return m_wszScanPath.LetPtr();
+	}
+
 	NTSTATUS ConnectClient(PFLT_PORT pClientPort);
 
 	void DisconnectClient(PFLT_PORT pClientPort);
@@ -134,5 +139,5 @@ public:
 private:
 	CAutoPtr<CFilter>				m_pFilter;
 	CAutoPtr<CFSDCommunicationPort> m_pPort;
-	CAutoPtr<WCHAR>					m_pScanPath;
+	CAutoPtr<WCHAR>					m_wszScanPath;
 };

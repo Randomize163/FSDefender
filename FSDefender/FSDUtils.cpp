@@ -1,11 +1,15 @@
 #include "FSDUtils.h"
 #include <stdio.h>
 #include <ntddk.h>
+#include "CFSDefender.h"
 
-const WCHAR* SCAN_FOLDER_PATH = L"\\Device\\HarddiskVolume3\\Users\\guran1996\\Documents\\";
-const size_t SCAN_FOLDER_PATH_LENGTH = 50;
+extern CFSDefender* g;
 
 void *__cdecl operator new(size_t count) {
+	return ExAllocatePoolWithTag(NonPagedPool, count, 'TRCm');
+}
+
+void *__cdecl operator new[](size_t count) {
 	return ExAllocatePoolWithTag(NonPagedPool, count, 'TRCm');
 }
 
@@ -16,12 +20,13 @@ void __cdecl operator delete(void *object, unsigned __int64 size) {
 
 bool PrintFileName(UNICODE_STRING ustrFileName)
 {
-	if (ustrFileName.Length < SCAN_FOLDER_PATH_LENGTH)
+	LPCWSTR wszName = g->GetScanDirectoryName();
+	if (!wszName)
 	{
 		return false;
 	}
 
-	return wcsncmp(SCAN_FOLDER_PATH, ustrFileName.Buffer, SCAN_FOLDER_PATH_LENGTH) == 0;
+	return wcsncmp(g->GetScanDirectoryName(), ustrFileName.Buffer, MAX_STRING_LENGTH) == 0;
 }
 
 VOID

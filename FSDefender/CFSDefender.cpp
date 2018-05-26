@@ -4,13 +4,14 @@
 #include "FSDCommon.h"
 #include "FSDRegistrationInfo.h"
 #include "stdio.h"
+#include "FSDStringUtils.h"
 
 extern CFSDefender* g;
 
 CFSDefender::CFSDefender()	
 	: m_pFilter()
 	, m_pPort()
-	, m_pScanPath()
+	, m_wszScanPath()
 {}
 
 CFSDefender::~CFSDefender()
@@ -57,11 +58,40 @@ void CFSDefender::DisconnectClient(PFLT_PORT pClientPort)
 NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBufferLength, OUT PVOID pvOutputBuffer, IN ULONG uOutputBufferLength, OUT PULONG puReturnOutputBufferLength)
 {
 	UNREFERENCED_PARAMETER(uInputBufferLength);
+	NTSTATUS hr = S_OK;
 
-	TRACE(TL_INFO, "NewMessageRecieved: %s\n", pvInputBuffer ? (CHAR*)pvInputBuffer : "Message is empty");
+	FSD_MESSAGE_FORMAT* pMessage = static_cast<FSD_MESSAGE_FORMAT*>(pvInputBuffer);
+	RETURN_IF_FAILED_ALLOC(pMessage);
 
-	sprintf_s((char*)pvOutputBuffer, (size_t)uOutputBufferLength, "Message successfully recieved");
-	*puReturnOutputBufferLength = (ULONG)strnlen_s((char*)pvOutputBuffer, static_cast<size_t>(uOutputBufferLength)) + 1;
+	*puReturnOutputBufferLength = 0;
+
+	switch (pMessage->aType)
+	{
+		case MESSAGE_TYPE_SET_SCAN_DIRECTORY:
+		{
+			CAutoPtr<WCHAR> wszFileName;
+			hr = NewCopyStringW(&wszFileName, pMessage->wszFileName, uInputBufferLength - sizeof(MESSAGE_TYPE));
+			RETURN_IF_FAILED(hr);
+
+			wszFileName.Detach(&m_wszScanPath);
+
+			TRACE(TL_INFO, "New scan directory configured: %ls\n", pMessage->wszFileName);
+
+			break;
+		}
+		case MESSAGE_TYPE_PRINT_STRING:
+		{
+			TRACE(TL_INFO, "New Message: %ls\n", pMessage->wszFileName);
+
+			swprintf_s((WCHAR*)pvOutputBuffer, (size_t)uOutputBufferLength, L"Message successfully recieved");
+			*puReturnOutputBufferLength = (ULONG)wcsnlen_s((WCHAR*)pvOutputBuffer, static_cast<size_t>(uOutputBufferLength)) + 1;
+
+			break;
+		}
+		default:
+			TRACE(TL_INFO, "Unknown MESSAGE_TYPE recieved: %u\n", pMessage->aType);
+			break;
+	}
 
 	return S_OK;
 }
@@ -322,7 +352,7 @@ The return value is the status of the operation.
 
 		if (NT_SUCCESS(hr) && PrintFileName(lnameInfo->Name))
 		{
-			CHAR szIrpCode[256] = {};
+			CHAR szIrpCode[MAX_STRING_LENGTH] = {};
 			PrintIrpCode(Data->Iopb->MajorFunction, Data->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
 
 			TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", FltGetRequestorProcessId(Data), lnameInfo->Name.Length, lnameInfo->Name.Buffer, szIrpCode);

@@ -38,6 +38,7 @@
     <ClCompile Include="CFilter.cpp" />
     <ClCompile Include="CFSDCommunicationPort.cpp" />
     <ClCompile Include="CFSDefender.cpp" />
+    <ClCompile Include="FSDStringUtils.cpp" />
     <ClCompile Include="FSDUtils.cpp" />
     <ResourceCompile Include="FSD.rc" />
     <ClCompile Include="FSD.cpp" />
@@ -191,6 +192,7 @@
     <ClInclude Include="CFSDCommunicationPort.h" />
     <ClInclude Include="CFSDefender.h" />
     <ClInclude Include="FSDRegistrationInfo.h" />
+    <ClInclude Include="FSDStringUtils.h" />
     <ClInclude Include="FSDUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
