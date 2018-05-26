@@ -2,12 +2,29 @@
 #include <fltKernel.h>
 #include "FSDUtils.h"
 
+typedef NTSTATUS(*FSD_CONNECT_CALLBACK)(PVOID pvContext, PFLT_PORT pClientPort);
+typedef void(*FSD_DISCONNECT_CALLBACK)(PVOID pvContext, PFLT_PORT pClientPort);
+typedef NTSTATUS(*FSD_NEW_MESSAGE_CALLBACK)(
+	IN	PVOID pvContext,
+	IN  PVOID pvInputBuffer, 
+	IN  ULONG uInputBufferLength, 
+	OUT PVOID pvOutputBuffer, 
+	IN  ULONG uOutputBufferLength, 
+	OUT PULONG puReturnOutputBufferLength);
+
 class CFSDCommunicationPort
 {
 public:
 	CFSDCommunicationPort();
 
-	NTSTATUS Initialize(LPCWSTR wszName, PFLT_FILTER pFilter);
+	NTSTATUS Initialize(
+		LPCWSTR					 wszName, 
+		PFLT_FILTER			     pFilter, 
+		PVOID				     pvContext,
+		FSD_CONNECT_CALLBACK	 pfnOnConnect,
+		FSD_DISCONNECT_CALLBACK	 pfnOnDisconnect,
+		FSD_NEW_MESSAGE_CALLBACK pfnOnNewMessage
+	);
 
 	void Close();
 
@@ -63,6 +80,9 @@ private:
 	PFLT_PORT	m_pPort;
 	PFLT_PORT   m_pClientPort;
 	PFLT_FILTER m_pFilter;
-};
 
-NTSTATUS NewFSDCommunicationPort(CFSDCommunicationPort** ppPort, LPCWSTR wszName, PFLT_FILTER pFilter);
+	PVOID				     m_pvContext;
+	FSD_CONNECT_CALLBACK	 m_pfnOnConnect;
+	FSD_DISCONNECT_CALLBACK	 m_pfnOnDisconnect;
+	FSD_NEW_MESSAGE_CALLBACK m_pfnOnNewMessage;
+};

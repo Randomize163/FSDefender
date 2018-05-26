@@ -13,12 +13,21 @@ CFSDCommunicationPort::CFSDCommunicationPort()
 	, m_pClientPort(NULL)
 {
 }
-
-NTSTATUS CFSDCommunicationPort::Initialize(LPCWSTR wszName, PFLT_FILTER pFilter)
-{
+NTSTATUS CFSDCommunicationPort::Initialize(
+	LPCWSTR					 wszName, 
+	PFLT_FILTER				 pFilter, 
+	PVOID				     pvContext,
+	FSD_CONNECT_CALLBACK	 pfnOnConnect, 
+	FSD_DISCONNECT_CALLBACK  pfnOnDisconnect, 
+	FSD_NEW_MESSAGE_CALLBACK pfnOnNewMessage
+){
 	NTSTATUS hr = S_OK;
 
-	m_pFilter = pFilter;
+	m_pFilter         = pFilter;
+	m_pvContext		  = pvContext;
+	m_pfnOnConnect	  = pfnOnConnect;
+	m_pfnOnDisconnect = pfnOnDisconnect;
+	m_pfnOnNewMessage = pfnOnNewMessage;
 
 	UNICODE_STRING ustrName;
 	RtlInitUnicodeString(&ustrName, wszName);
@@ -76,27 +85,14 @@ NTSTATUS CFSDCommunicationPort::OnConnect(IN PFLT_PORT ClientPort, IN PVOID Serv
 	UNREFERENCED_PARAMETER(ConnectionContext);
 	UNREFERENCED_PARAMETER(SizeOfContext);
 
-	NTSTATUS hr = S_OK;
-
 	ASSERT(m_pClientPort == NULL);
 	m_pClientPort = ClientPort;
 
-	PT_DBG_PRINT(TL_INFO, ("User connected. 0x%p\n", ClientPort));
-
 	*ConnectionPortCookie = ServerPortCookie;
 
-	CHAR pMsg[256];
-	sprintf_s(pMsg, 256, "Welcome client!");
-
-	hr = SendMessage(pMsg, 256, NULL, NULL, 0);
-	if (FAILED(hr))
+	if (m_pfnOnConnect)
 	{
-		PT_DBG_PRINT(TL_INFO, ("Send failed with status: 0x%x\n", hr));
-	}
-
-	if (hr == STATUS_TIMEOUT)
-	{
-		PT_DBG_PRINT(TL_INFO, ("Send got timeout\n"));
+		return m_pfnOnConnect(m_pvContext, ClientPort);
 	}
 
 	return S_OK;
@@ -104,19 +100,28 @@ NTSTATUS CFSDCommunicationPort::OnConnect(IN PFLT_PORT ClientPort, IN PVOID Serv
 
 void CFSDCommunicationPort::OnDisconnect()
 {
-	PT_DBG_PRINT(TL_INFO, ("User disconnected.\n"));
 	FltCloseClientPort(m_pFilter, &m_pClientPort);
+
+	if (m_pfnOnDisconnect)
+	{
+		m_pfnOnDisconnect(m_pvContext, m_pClientPort);
+	}
+
 	m_pClientPort = NULL;
 }
 
-NTSTATUS CFSDCommunicationPort::OnNewMessage(IN PVOID InputBuffer OPTIONAL, IN ULONG InputBufferLength, OUT PVOID OutputBuffer OPTIONAL, IN ULONG OutputBufferLength, OUT PULONG ReturnOutputBufferLength)
-{
-	UNREFERENCED_PARAMETER(InputBufferLength);
-	PT_DBG_PRINT(TL_INFO, ("NewMessageRecieved: %s\n", InputBuffer ? (CHAR*)InputBuffer : "Message is empty"));
-
-	sprintf_s((char*)OutputBuffer, (size_t)OutputBufferLength, "Message successfully recieved");
-	*ReturnOutputBufferLength = (ULONG)strnlen_s((char*)OutputBuffer, static_cast<size_t>(OutputBufferLength)) + 1;
-
+NTSTATUS CFSDCommunicationPort::OnNewMessage(
+	IN PVOID InputBuffer OPTIONAL, 
+	IN ULONG InputBufferLength, 
+	OUT PVOID OutputBuffer OPTIONAL, 
+	IN ULONG OutputBufferLength, 
+	OUT PULONG ReturnOutputBufferLength
+){
+	if (m_pfnOnNewMessage)
+	{
+		return m_pfnOnNewMessage(m_pvContext, InputBuffer, InputBufferLength, OutputBuffer, OutputBufferLength, ReturnOutputBufferLength);
+	}
+		
 	return S_OK;
 }
 

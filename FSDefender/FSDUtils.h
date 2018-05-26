@@ -14,21 +14,19 @@
 
 extern ULONG gTraceFlags;
 
-#define PT_DBG_PRINT( _dbgLevel, _string )          \
+#define TRACE(_dbgLevel, Format, ...) \
+	FlagOn(gTraceFlags, _dbgLevel) ? DbgPrint(Format, __VA_ARGS__) : ((int)0)
+
+/*
+#define TRACE(_dbgLevel, _string)          \
     (FlagOn(gTraceFlags,(_dbgLevel)) ?              \
-        DbgPrint _string :                          \
+        DbgPrint(_string) :                          \
         ((int)0))
+*/
 
 void *__cdecl operator new(size_t count);
 
 void __cdecl operator delete(void *object, unsigned __int64);
-
-struct IDestructable
-{
-	virtual ~IDestructable() = 0
-	{
-	}
-};
 
 //
 // standard IRP_MJ string definitions

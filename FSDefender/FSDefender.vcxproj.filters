@@ -41,6 +41,9 @@
     <ClCompile Include="CFilter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CFSDefender.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FSDUtils.h">
@@ -50,6 +53,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="CFilter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFSDefender.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSDRegistrationInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

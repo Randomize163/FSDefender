@@ -1,3 +1,7 @@
+#pragma once
+
+#include "FSDCommon.h"
+
 template<typename T>
 class CAutoPtr
 {
@@ -47,12 +51,12 @@ public:
 		ASSERT(*pp == NULL);
 		*pp = m_p;
 
-		Release();
+		m_p = NULL;
 	}
 
 	bool operator!() const
 	{
-		return m_p != NULL;
+		return m_p == NULL;
 	}
 
 private:
