@@ -35,9 +35,21 @@
     <ClCompile Include="FSD.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CFSDCommunicationPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CFilter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FSDUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFSDCommunicationPort.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CFilter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -18,25 +18,24 @@ Environment:
 #include <dontuse.h>
 #include <suppress.h>
 #include "FSDUtils.h"
+#include "FSDCommon.h"
+#include "CFSDCommunicationPort.h"
+#include "AutoPtr.h"
+#include "CFilter.h"
 
 #pragma prefast(disable:__WARNING_ENCODE_MEMBER_FUNCTION_POINTER, "Not valid for kernel mode drivers")
 
+ULONG gTraceFlags = 15;
 
-PFLT_FILTER gFilterHandle;
+struct GlobalData
+{
+	CAutoPtr<CFilter>				pFilter;
+	CAutoPtr<CFSDCommunicationPort> pPort;
+};
+
+GlobalData* g;
+
 ULONG_PTR OperationStatusCtx = 1;
-
-#define PTDBG_TRACE_ERROR            0x00000001
-#define PTDBG_TRACE_WARNING			 0x00000002
-#define PTDBG_TRACE_INFO			 0x00000004
-#define PTDBG_TRACE_VERBOSE			 0x00000008
-#define PTDBG_TRACE_FUNCTION_ENTRY   0x00000010
-
-ULONG gTraceFlags = 7;
-
-#define PT_DBG_PRINT( _dbgLevel, _string )          \
-    (FlagOn(gTraceFlags,(_dbgLevel)) ?              \
-        DbgPrint _string :                          \
-        ((int)0))
 
 /*************************************************************************
     Prototypes
@@ -365,8 +364,6 @@ CONST FLT_REGISTRATION FilterRegistration = {
 
 };
 
-
-
 NTSTATUS
 FSDInstanceSetup (
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
@@ -405,10 +402,10 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDInstanceSetup: Entered\n") );
 
-    return STATUS_SUCCESS;
+    return S_OK;
 }
 
 
@@ -447,10 +444,10 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDInstanceQueryTeardown: Entered\n") );
 
-    return STATUS_SUCCESS;
+    return S_OK;
 }
 
 
@@ -483,7 +480,7 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDInstanceTeardownStart: Entered\n") );
 }
 
@@ -517,7 +514,7 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDInstanceTeardownComplete: Entered\n") );
 }
 
@@ -552,38 +549,35 @@ Return Value:
 
 --*/
 {
-    NTSTATUS status;
+    NTSTATUS hr;
 
     UNREFERENCED_PARAMETER( RegistryPath );
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
-                  ("FSD!DriverEntry: Entered\n") );
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY, ("FSD!DriverEntry: Entered\n"));
+
+	CAutoPtr<GlobalData> pData = new GlobalData();
+	RETURN_IF_FAILED_ALLOC(pData);
 
     //
     //  Register with FltMgr to tell it our callback routines
     //
 
-    status = FltRegisterFilter( DriverObject,
-                                &FilterRegistration,
-                                &gFilterHandle );
+	hr = NewInstanceOf<CFilter>(&pData->pFilter, DriverObject, &FilterRegistration);
+	RETURN_IF_FAILED(hr);
 
-    FLT_ASSERT( NT_SUCCESS( status ) );
+	hr = NewInstanceOf<CFSDCommunicationPort>(&pData->pPort, g_wszFSDPortName, pData->pFilter->Handle());
+	RETURN_IF_FAILED(hr);
 
-    if (NT_SUCCESS( status )) {
+    //
+    //  Start filtering i/o
+    //
 
-        //
-        //  Start filtering i/o
-        //
+	hr = pData->pFilter->StartFiltering();
+	RETURN_IF_FAILED(hr);
 
-        status = FltStartFiltering( gFilterHandle );
+	pData.Detach(&g);
 
-        if (!NT_SUCCESS( status )) {
-
-            FltUnregisterFilter( gFilterHandle );
-        }
-    }
-
-    return status;
+    return S_OK;
 }
 
 NTSTATUS
@@ -613,12 +607,11 @@ Return Value:
 
     PAGED_CODE();
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
-                  ("FSD!FSDUnload: Entered\n") );
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY, ("FSD!FSDUnload: Entered\n") );
 
-    FltUnregisterFilter( gFilterHandle );
+	delete g;
 
-    return STATUS_SUCCESS;
+    return S_OK;
 }
 
 
@@ -656,12 +649,12 @@ Return Value:
 
 --*/
 {
-    NTSTATUS status;
+    NTSTATUS hr;
 
     UNREFERENCED_PARAMETER( FltObjects );
     UNREFERENCED_PARAMETER( CompletionContext );
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDPreOperation: Entered\n") );
 
     //
@@ -675,14 +668,14 @@ Return Value:
 
     if (FSDDoRequestOperationStatus( Data )) {
 
-        status = FltRequestOperationStatusCallback( Data,
+        hr = FltRequestOperationStatusCallback( Data,
                                                     FSDOperationStatusCallback,
                                                     (PVOID)(++OperationStatusCtx) );
-        if (!NT_SUCCESS(status)) {
+        if (!NT_SUCCESS(hr)) {
 
-            PT_DBG_PRINT(PTDBG_TRACE_ERROR,
+            PT_DBG_PRINT(TL_ERROR,
                           ("FSD!FSDPreOperation: FltRequestOperationStatusCallback Failed, status=%08x\n",
-                           status) );
+                           hr) );
         }
     }
 
@@ -690,21 +683,21 @@ Return Value:
 
 	if (FltObjects->FileObject != NULL) 
 	{
-		status = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &lnameInfo);
-		if (!NT_SUCCESS(status) && status != STATUS_FLT_NAME_CACHE_MISS)
+		hr = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &lnameInfo);
+		if (!NT_SUCCESS(hr) && hr != STATUS_FLT_NAME_CACHE_MISS)
 		{
-			PT_DBG_PRINT(PTDBG_TRACE_ERROR,
+			PT_DBG_PRINT(TL_ERROR,
 				("FSD!FSDPreOperation: FltGetFileNameInformation Failed, status=%08x\n",
-					status));
+					hr));
 			return FLT_PREOP_SUCCESS_WITH_CALLBACK;
 		} 
 		
-		if (NT_SUCCESS(status) && PrintFileName(lnameInfo->Name))
+		if (NT_SUCCESS(hr) && PrintFileName(lnameInfo->Name))
 		{
 			CHAR szIrpCode[256] = {};
 			PrintIrpCode(Data->Iopb->MajorFunction, Data->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
 
-			PT_DBG_PRINT(PTDBG_TRACE_VERBOSE,
+			PT_DBG_PRINT(TL_VERBOSE,
 				("PID: %u File: %.*ls %s\n", FltGetRequestorProcessId(Data), lnameInfo->Name.Length, lnameInfo->Name.Buffer, szIrpCode));
 		}		
 	}
@@ -754,10 +747,10 @@ Return Value:
 {
     UNREFERENCED_PARAMETER( FltObjects );
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDOperationStatusCallback: Entered\n") );
 
-    PT_DBG_PRINT( PTDBG_TRACE_VERBOSE,
+    PT_DBG_PRINT( TL_VERBOSE,
                   ("FSD!FSDOperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"\n",
                    OperationStatus,
                    RequesterContext,
@@ -806,7 +799,7 @@ Return Value:
     UNREFERENCED_PARAMETER( CompletionContext );
     UNREFERENCED_PARAMETER( Flags );
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDPostOperation: Entered\n") );
 
     return FLT_POSTOP_FINISHED_PROCESSING;
@@ -848,7 +841,7 @@ Return Value:
     UNREFERENCED_PARAMETER( FltObjects );
     UNREFERENCED_PARAMETER( CompletionContext );
 
-    PT_DBG_PRINT(PTDBG_TRACE_FUNCTION_ENTRY,
+    PT_DBG_PRINT(TL_FUNCTION_ENTRY,
                   ("FSD!FSDPreOperationNoPostOperation: Entered\n") );
 
     // This template code does not do anything with the callbackData, but

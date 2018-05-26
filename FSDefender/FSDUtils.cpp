@@ -1,8 +1,18 @@
 #include "FSDUtils.h"
 #include <stdio.h>
+#include <ntddk.h>
 
 const WCHAR* SCAN_FOLDER_PATH = L"\\Device\\HarddiskVolume3\\Users\\guran1996\\Documents\\";
 const size_t SCAN_FOLDER_PATH_LENGTH = 50;
+
+void *__cdecl operator new(size_t count) {
+	return ExAllocatePoolWithTag(NonPagedPool, count, 'TRCm');
+}
+
+void __cdecl operator delete(void *object, unsigned __int64 size) {
+	UNREFERENCED_PARAMETER(size);
+	ExFreePoolWithTag(object, 'TRCm');
+}
 
 bool PrintFileName(UNICODE_STRING ustrFileName)
 {
