@@ -1,8 +1,5 @@
 #include "CFSDPortConnector.h"
-#include "FSDCommon.h"
-
-#include <windows.h>
-#include <fltuser.h>
+#include "FSDCommonInclude.h"
 
 CFSDPortConnector::CFSDPortConnector()
 	: m_hPort(NULL)

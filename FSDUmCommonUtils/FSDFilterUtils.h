@@ -1,32 +1,6 @@
 #pragma once
 
 #include <fltKernel.h>
-#include <dontuse.h>
-#include <suppress.h>
-
-
-
-#define TL_ERROR            0x00000001
-#define TL_WARNING			0x00000002
-#define TL_INFO				0x00000004
-#define TL_VERBOSE			0x00000008
-#define TL_FUNCTION_ENTRY   0x00000010
-
-extern ULONG gTraceFlags;
-
-#define TRACE(_dbgLevel, Format, ...) \
-	FlagOn(gTraceFlags, _dbgLevel) ? DbgPrint(Format, __VA_ARGS__) : ((int)0)
-
-/*
-#define TRACE(_dbgLevel, _string)          \
-    (FlagOn(gTraceFlags,(_dbgLevel)) ?              \
-        DbgPrint(_string) :                          \
-        ((int)0))
-*/
-
-void *__cdecl operator new(size_t count);
-
-void __cdecl operator delete(void *object, unsigned __int64);
 
 //
 // standard IRP_MJ string definitions

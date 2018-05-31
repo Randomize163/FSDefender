@@ -35,78 +35,93 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CFilter.cpp" />
-    <ClCompile Include="CFSDefender.cpp" />
-    <ResourceCompile Include="FSD.rc" />
-    <ClCompile Include="FSD.cpp" />
-    <Inf Include="FSD.inf" />
+    <ClInclude Include="..\FSDCommonUtils\AutoPtr.h" />
+    <ClInclude Include="..\FSDCommonUtils\FSDCommonInclude.h" />
+    <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h" />
+    <ClInclude Include="..\FSDUmCommonUtils\FSDFilterUtils.h" />
+    <ClInclude Include="CFSDCommunicationPort.h" />
+    <ClInclude Include="FSDKmCommonInclude.h" />
+    <ClInclude Include="FSDMemoryUtils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
+    <ClCompile Include="..\FSDUmCommonUtils\FSDFilterUtils.cpp" />
+    <ClCompile Include="CFSDCommunicationPort.cpp" />
+    <ClCompile Include="FSDMemoryUtils.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{F903A923-70DC-4726-BEC2-BD174FD2220D}</ProjectGuid>
-    <TemplateGuid>{f2f62967-0815-4fd7-9b86-6eedcac766eb}</TemplateGuid>
+    <ProjectGuid>{89964F63-08C7-4356-AE31-E71B059E54DA}</ProjectGuid>
+    <TemplateGuid>{0a049372-4c4d-4ea0-a64e-dc6ad88ceca1}</TemplateGuid>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <MinimumVisualStudioVersion>12.0</MinimumVisualStudioVersion>
     <Configuration>Debug</Configuration>
     <Platform Condition="'$(Platform)' == ''">Win32</Platform>
-    <RootNamespace>FSDefenderKernel</RootNamespace>
-    <ProjectName>FSD</ProjectName>
+    <RootNamespace>FSDKmCommonUtils</RootNamespace>
+    <DriverType>KMDF</DriverType>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'" Label="Configuration">
     <TargetVersion>Windows10</TargetVersion>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>WindowsKernelModeDriver10.0</PlatformToolset>
-    <ConfigurationType>Driver</ConfigurationType>
-    <DriverType>WDM</DriverType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <DriverTargetPlatform>Universal</DriverTargetPlatform>
+    <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -114,95 +129,55 @@
   <ImportGroup Label="PropertySheets">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
-  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" />
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-    <IncludePath>$(CRT_IncludePath);$(KM_IncludePath);$(KIT_SHARED_IncludePath);$(IncludePath)</IncludePath>
-    <SourcePath>$(VC_SourcePath);</SourcePath>
-    <ReferencePath>$(VC_ReferencesPath_x64);</ReferencePath>
-    <LibraryPath>$(DDK_LibraryPath_DDKPlatform);$(LibraryPath)</LibraryPath>
-    <ExcludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuild_ExecutablePath);$(VC_LibraryPath_x64);</ExcludePath>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <DebuggerFlavor>DbgengKernelDebugger</DebuggerFlavor>
+    <IncludePath>C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonUtils;$(IncludePath);$(KMDF_INC_PATH)$(KMDF_VER_PATH)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <Link>
-      <AdditionalDependencies>FSDKmCommonUtils.lib;fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-    </Link>
     <ClCompile>
-      <AdditionalIncludeDirectories>$(SolutionDir)\FSDCommonUtils;$(SolutionDir)\FSDKmCommonUtils;$(SolutionDir)\FSDCommonDefs;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <AdditionalIncludeDirectories>$(SolutionDir)\FSDKmCommonUtils;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM64'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+    </ClCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|ARM64'">
-    <Link>
-      <AdditionalDependencies>fltmgr.lib;%(AdditionalDependencies)</AdditionalDependencies>
-    </Link>
+    <ClCompile>
+      <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+    </ClCompile>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <FilesToPackage Include="$(TargetPath)" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFilter.h" />
-    <ClInclude Include="CFSDefender.h" />
-    <ClInclude Include="FSDRegistrationInfo.h" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\FSDKmCommonUtils\FSDKmCommonUtils.vcxproj">
-      <Project>{89964f63-08c7-4356-ae31-e71b059e54da}</Project>
-    </ProjectReference>
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

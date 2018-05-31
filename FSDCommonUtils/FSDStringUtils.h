@@ -1,6 +1,5 @@
 #pragma once
 
-#include <fltKernel.h>
-#include "FSDCommon.h"
+#include "FSDCommonInclude.h"
 
 NTSTATUS NewCopyStringW(LPWSTR* pwszDest, LPCWSTR wszSource, size_t cbSource);

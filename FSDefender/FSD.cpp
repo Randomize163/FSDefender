@@ -18,7 +18,7 @@ Environment:
 #include <dontuse.h>
 #include <suppress.h>
 #include "FSDUtils.h"
-#include "FSDCommon.h"
+#include "FSDCommonDefs.h"
 #include "AutoPtr.h"
 #include "CFSDefender.h"
 

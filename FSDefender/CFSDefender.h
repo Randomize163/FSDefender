@@ -135,9 +135,11 @@ public:
 		_In_ PFLT_CALLBACK_DATA Data
 	);
 
+private:
+	static bool PrintFileName(UNICODE_STRING);
 
 private:
 	CAutoPtr<CFilter>				m_pFilter;
 	CAutoPtr<CFSDCommunicationPort> m_pPort;
-	CAutoPtr<WCHAR>					m_wszScanPath;
+	CAutoStringW				    m_wszScanPath;
 };

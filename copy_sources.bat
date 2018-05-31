@@ -1,0 +1,6 @@
+xcopy /R/Y "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonDefs\*" "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\x64\Debug\Sources\"
+xcopy /R/Y "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonUtils\*" "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\x64\Debug\Sources\"
+xcopy /R/Y "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDefender\*" "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\x64\Debug\Sources\"
+xcopy /R/Y "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDManager\*" "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\x64\Debug\Sources\"
+xcopy /R/Y "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDUmCommonUtils\*" "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\x64\Debug\Sources\"
+xcopy /R/Y "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDKmCommonUtils\*" "C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\x64\Debug\Sources\"

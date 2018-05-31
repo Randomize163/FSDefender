@@ -15,17 +15,9 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CFSDPortConnector.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FSDManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFSDPortConnector.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FSDManager.rc">

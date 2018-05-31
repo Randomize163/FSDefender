@@ -35,11 +35,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CFSDPortConnector.cpp" />
     <ClCompile Include="FSDManager.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFSDPortConnector.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FSDManager.rc" />
@@ -126,7 +122,9 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommon;$(IncludePath)</IncludePath>
+    <IncludePath>C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDUmCommonUtils;C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonUtils;C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonDefs;$(IncludePath)</IncludePath>
+    <SourcePath>C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonDefs;C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonUtils;$(VC_SourcePath);</SourcePath>
+    <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -148,11 +146,21 @@
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;FSDUmCommonUtils.lib</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(SolutionDir)\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <LinkStatus>
+      </LinkStatus>
+      <AdditionalOptions>/NODEFAULTLIB:MSVCRTD %(AdditionalOptions)</AdditionalOptions>
+      <GenerateDebugInformation>DebugFull</GenerateDebugInformation>
     </Link>
+    <ProjectReference>
+      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>

@@ -13,41 +13,42 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Driver Files">
-      <UniqueIdentifier>{8E41214B-6785-4CFE-B992-037D68949A14}</UniqueIdentifier>
-      <Extensions>inf;inv;inx;mof;mc;</Extensions>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <Inf Include="FSD.inf">
-      <Filter>Driver Files</Filter>
-    </Inf>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="FSD.rc">
-      <Filter>Resource Files</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="FSD.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CFilter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CFSDefender.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="CFilter.h">
+    <ClInclude Include="CFSDCommunicationPort.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CFSDefender.h">
+    <ClInclude Include="..\FSDCommonUtils\AutoPtr.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSDRegistrationInfo.h">
+    <ClInclude Include="..\FSDCommonUtils\FSDCommonInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FSDUmCommonUtils\FSDFilterUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSDMemoryUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="FSDKmCommonInclude.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="CFSDCommunicationPort.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\FSDUmCommonUtils\FSDFilterUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSDMemoryUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
 </Project>

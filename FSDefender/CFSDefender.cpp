@@ -1,7 +1,7 @@
 #include "CFSDefender.h"
 
 #include "FSDUtils.h"
-#include "FSDCommon.h"
+#include "FSDCommonDefs.h"
 #include "FSDRegistrationInfo.h"
 #include "stdio.h"
 #include "FSDStringUtils.h"
@@ -69,7 +69,7 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
 	{
 		case MESSAGE_TYPE_SET_SCAN_DIRECTORY:
 		{
-			CAutoPtr<WCHAR> wszFileName;
+			CAutoStringW wszFileName;
 			hr = NewCopyStringW(&wszFileName, pMessage->wszFileName, uInputBufferLength - sizeof(MESSAGE_TYPE));
 			RETURN_IF_FAILED(hr);
 
@@ -552,3 +552,13 @@ FALSE - If we don't
 			);
 }
 
+bool CFSDefender::PrintFileName(UNICODE_STRING ustrFileName)
+{
+	LPCWSTR wszScanDirName = g->GetScanDirectoryName();
+	if (!wszScanDirName)
+	{
+		return false;
+	}
+
+	return wcscmp(wszScanDirName, ustrFileName.Buffer) == 0;
+}

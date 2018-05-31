@@ -1,6 +1,5 @@
 #pragma once
 #include <fltKernel.h>
-#include "FSDUtils.h"
 
 typedef NTSTATUS(*FSD_CONNECT_CALLBACK)(PVOID pvContext, PFLT_PORT pClientPort);
 typedef void(*FSD_DISCONNECT_CALLBACK)(PVOID pvContext, PFLT_PORT pClientPort);

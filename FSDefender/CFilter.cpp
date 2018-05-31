@@ -1,5 +1,6 @@
 #include "CFilter.h"
-#include "FSDCommon.h"
+#include "FSDCommonInclude.h"
+#include "FSDCommonDefs.h"
 
 CFilter::CFilter()
 	: m_hFilter(NULL)
