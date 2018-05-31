@@ -1,0 +1,1 @@
+net use D: \\169.254.176.202\FSD /PERSISTENT:YES /USER:Randomize

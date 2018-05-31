@@ -1,0 +1,1 @@
+RUNDLL32.EXE SETUPAPI.DLL,InstallHinfSection DefaultUninstall 132 C:\Users\guran1996\Desktop\FSDefenderKernel.inf
