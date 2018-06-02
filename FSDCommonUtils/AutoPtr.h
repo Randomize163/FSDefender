@@ -6,110 +6,115 @@ template<class T>
 class CAuto
 {
 public:
-	CAuto()
-		: m_p(NULL)
-	{}
+    CAuto()
+        : m_p(NULL)
+    {}
 
-	CAuto(T* p)
-		: m_p(p)
-	{}
+    CAuto(T* p)
+        : m_p(p)
+    {}
 
-	~CAuto()
-	{
-		ASSERT(m_p == NULL);
-	}
+    ~CAuto()
+    {
+        ASSERT(m_p == NULL);
+    }
 
-	virtual void Release() = 0;
-	
-	void Detach(T** pp)
-	{
-		ASSERT(*pp == NULL);
-		*pp = m_p;
+    virtual void Release() = 0;
 
-		m_p = NULL;
-	}
+    void Detach(T** pp)
+    {
+        ASSERT(*pp == NULL);
+        *pp = m_p;
 
-	T* LetPtr() const
-	{
-		return m_p;
-	}
+        m_p = NULL;
+    }
 
-	bool operator!() const
-	{
-		return m_p == NULL;
-	}
+    T* LetPtr() const
+    {
+        return m_p;
+    }
 
-	T** operator&()
-	{
-		Release();
+    bool operator!() const
+    {
+        return m_p == NULL;
+    }
 
-		return &m_p;
-	}
+    T** operator&()
+    {
+        Release();
+
+        return &m_p;
+    }
 
 public:
-	T * m_p;
+    T * m_p;
 };
 
 template<class T>
 class CAutoPtr : public CAuto<T>
 {
 public:
-	CAutoPtr()
-		: CAuto<T>()
-	{}
+    CAutoPtr()
+        : CAuto<T>()
+    {}
 
-	CAutoPtr(T* p)
-		: CAuto<T>(p)
-	{}
+    CAutoPtr(T* p)
+        : CAuto<T>(p)
+    {}
 
-	~CAutoPtr()
-	{
-		Release();
-	}
+    ~CAutoPtr()
+    {
+        Release();
+    }
 
-	T& operator*() const
-	{
-		return *m_p; 
-	}
+    T& operator*() const
+    {
+        return *m_p; 
+    }
 
-	T* operator->() const 
-	{ 
-		return m_p; 
-	}
+    T* operator->() const 
+    { 
+        return m_p; 
+    }
 
-	virtual void Release()
-	{
-		if (this->m_p)
-		{
-			delete this->m_p;
-			this->m_p = NULL;
-		}
-	}
+    virtual void Release()
+    {
+        if (this->m_p)
+        {
+            delete this->m_p;
+            this->m_p = NULL;
+        }
+    }
 
 private:
-	CAutoPtr(T& t);
-	T& operator=(T& t);
+    CAutoPtr(T& t);
+    T& operator=(T& t);
 };
 
 template<class T>
 class CAutoArrayPtr : public CAutoPtr<T>
 {
 public:
-	CAutoArrayPtr()
-	{}
+    CAutoArrayPtr()
+    {}
 
-	CAutoArrayPtr(T* p)
-		: CAutoPtr<T>(p)
-	{}
+    CAutoArrayPtr(T* p)
+        : CAutoPtr<T>(p)
+    {}
 
-	void Release() 
-	{
-		if (this->m_p)
-		{
-			delete[] this->m_p;
-			this->m_p = NULL;
-		}
-	}
+    void Release() 
+    {
+        if (this->m_p)
+        {
+            delete[] this->m_p;
+            this->m_p = NULL;
+        }
+    }
+
+    T& operator[](ULONG i)
+    {
+        return this->m_p[i];
+    }
 };
 
 typedef CAutoArrayPtr<WCHAR> CAutoStringW;
@@ -118,41 +123,69 @@ typedef CAutoArrayPtr<CHAR>  CAutoStringA;
 class CAutoHandle : public CAuto<void>
 {
 public:
-	CAutoHandle()
-		: CAuto<void>()
-	{}
+    CAutoHandle()
+        : CAuto<void>()
+    {}
 
-	CAutoHandle(HANDLE hHandle)
-		: CAuto<void>(hHandle)
-	{}
+    CAutoHandle(HANDLE hHandle)
+        : CAuto<void>(hHandle)
+    {}
 
-	~CAutoHandle()
-	{
-		Release();
-	}
+    ~CAutoHandle()
+    {
+        Release();
+    }
 
-	virtual void Release()
-	{
-		if (this->m_p)
-		{
-			CloseHandle(this->m_p);
-			this->m_p = NULL;
-		}
-	}
+    virtual void Release()
+    {
+        if (this->m_p)
+        {
+            CloseHandle(this->m_p);
+            this->m_p = NULL;
+        }
+    }
 };
+
+#ifdef _KERNEL_MODE 
+class CAutoNameInformation : public CAutoPtr<FLT_FILE_NAME_INFORMATION>
+{
+public:
+    CAutoNameInformation()
+        : CAutoPtr<FLT_FILE_NAME_INFORMATION>()
+    {}
+
+    CAutoNameInformation(PFLT_FILE_NAME_INFORMATION pNameInformation)
+        : CAutoPtr<FLT_FILE_NAME_INFORMATION>(pNameInformation)
+    {}
+
+    ~CAutoNameInformation()
+    {
+        Release();
+    }
+
+    virtual void Release()
+    {
+        if (this->m_p)
+        {
+            FltReleaseFileNameInformation(this->m_p);
+            this->m_p = NULL;
+        }
+    }
+};
+#endif
 
 template<typename T, class ... Types>
 NTSTATUS NewInstanceOf(T** ppNewInstance, Types ... args)
 {
-	NTSTATUS hr = S_OK;
+    NTSTATUS hr = S_OK;
 
-	CAutoPtr<T> pInstance = new T();
-	RETURN_IF_FAILED_ALLOC(pInstance);
+    CAutoPtr<T> pInstance = new T();
+    RETURN_IF_FAILED_ALLOC(pInstance);
 
-	hr = pInstance->Initialize(args...);
-	RETURN_IF_FAILED(hr);
+    hr = pInstance->Initialize(args...);
+    RETURN_IF_FAILED(hr);
 
-	pInstance.Detach(ppNewInstance);
+    pInstance.Detach(ppNewInstance);
 
-	return S_OK;
+    return S_OK;
 }

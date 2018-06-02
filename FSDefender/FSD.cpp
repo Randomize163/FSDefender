@@ -79,11 +79,11 @@ Return Value:
 
     TRACE(TL_FUNCTION_ENTRY, "FSD!DriverEntry: Entered\n");
 
-	CAutoPtr<CFSDefender> pDefender;
-	hr = NewInstanceOf<CFSDefender>(&pDefender, DriverObject);
-	RETURN_IF_FAILED(hr);
+    CAutoPtr<CFSDefender> pDefender;
+    hr = NewInstanceOf<CFSDefender>(&pDefender, DriverObject);
+    RETURN_IF_FAILED(hr);
 
-	pDefender.Detach(&g);
+    pDefender.Detach(&g);
 
     return S_OK;
 }

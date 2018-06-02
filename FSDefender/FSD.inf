@@ -14,9 +14,9 @@ DriverVer = 04/26/2018,13.38.4.170
 CatalogFile = FSD.cat
 
 [DestinationDirs]
-DefaultDestDir					= 12
-MiniFilter.CopyDriverFiles		= 12            ;%windir%\system32\drivers
-MiniFilter.DeleteDriverFiles	= 12            ;%windir%\system32\drivers
+DefaultDestDir                    = 12
+MiniFilter.CopyDriverFiles        = 12            ;%windir%\system32\drivers
+MiniFilter.DeleteDriverFiles    = 12            ;%windir%\system32\drivers
 
 ;;
 ;; Default install sections

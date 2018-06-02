@@ -8,10 +8,13 @@
 
 extern CFSDefender* g;
 
-CFSDefender::CFSDefender()	
-	: m_pFilter()
-	, m_pPort()
-	, m_wszScanPath()
+CFSDefender::CFSDefender()    
+    : m_pFilter()
+    , m_pPort()
+    , m_wszScanPath()
+    , m_fSniffer(false)
+    , uDropsCount(0)
+    , uSendsCount(0)
 {}
 
 CFSDefender::~CFSDefender()
@@ -19,89 +22,170 @@ CFSDefender::~CFSDefender()
 }
 
 NTSTATUS CFSDefender::Initialize(
-	PDRIVER_OBJECT          pDriverObject
+    PDRIVER_OBJECT          pDriverObject
 ){
-	NTSTATUS hr = S_OK;
-	
-	//
-	//  Register with FltMgr to tell it our callback routines
-	//
+    NTSTATUS hr = S_OK;
 
-	hr = NewInstanceOf<CFilter>(&m_pFilter, pDriverObject, &FilterRegistration);
-	RETURN_IF_FAILED(hr);
+    //
+    //  Register with FltMgr to tell it our callback routines
+    //
 
-	hr = NewInstanceOf<CFSDCommunicationPort>(&m_pPort, g_wszFSDPortName, m_pFilter->Handle(), this, OnConnect, OnDisconnect, OnNewMessage);
-	RETURN_IF_FAILED(hr);
+    hr = NewInstanceOf<CFilter>(&m_pFilter, pDriverObject, &FilterRegistration);
+    RETURN_IF_FAILED(hr);
 
-	//
-	//  Start filtering i/o
-	//
+    hr = NewInstanceOf<CFSDCommunicationPort>(&m_pPort, g_wszFSDPortName, m_pFilter->Handle(), this, OnConnect, OnDisconnect, OnNewMessage);
+    RETURN_IF_FAILED(hr);
 
-	hr = m_pFilter->StartFiltering();
-	RETURN_IF_FAILED(hr);
+    //
+    //  Start filtering i/o
+    //
 
-	return S_OK;
+    hr = m_pFilter->StartFiltering();
+    RETURN_IF_FAILED(hr);
+
+    return S_OK;
 }
 
 NTSTATUS CFSDefender::ConnectClient(PFLT_PORT pClientPort)
 {
-	TRACE(TL_INFO, "User connected. 0x%p\n", pClientPort);
-	return S_OK;
+    TRACE(TL_INFO, "User connected. 0x%p\n", pClientPort);
+    m_fSniffer = true;
+
+    return S_OK;
 }
 
 void CFSDefender::DisconnectClient(PFLT_PORT pClientPort)
 {
-	TRACE(TL_INFO, "User disconnected. 0x%p\n", pClientPort);
-	return;
+    TRACE(TL_INFO, "User disconnected. 0x%p\n", pClientPort);
+    m_fSniffer = false;
+
+    return;
 }
 
 NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBufferLength, OUT PVOID pvOutputBuffer, IN ULONG uOutputBufferLength, OUT PULONG puReturnOutputBufferLength)
 {
-	UNREFERENCED_PARAMETER(uInputBufferLength);
-	NTSTATUS hr = S_OK;
+    UNREFERENCED_PARAMETER(uInputBufferLength);
+    NTSTATUS hr = S_OK;
 
-	FSD_MESSAGE_FORMAT* pMessage = static_cast<FSD_MESSAGE_FORMAT*>(pvInputBuffer);
-	RETURN_IF_FAILED_ALLOC(pMessage);
+    FSD_MESSAGE_FORMAT* pMessage = static_cast<FSD_MESSAGE_FORMAT*>(pvInputBuffer);
+    RETURN_IF_FAILED_ALLOC(pMessage);
 
-	*puReturnOutputBufferLength = 0;
+    *puReturnOutputBufferLength = 0;
 
-	switch (pMessage->aType)
-	{
-		case MESSAGE_TYPE_SET_SCAN_DIRECTORY:
-		{
-			CAutoStringW wszFileName;
-			hr = NewCopyStringW(&wszFileName, pMessage->wszFileName, uInputBufferLength - sizeof(MESSAGE_TYPE));
-			RETURN_IF_FAILED(hr);
+    switch (pMessage->aType)
+    {
+        case MESSAGE_TYPE_SET_SCAN_DIRECTORY:
+        {
+            CAutoStringW wszFileName;
+            hr = NewCopyStringW(&wszFileName, pMessage->wszFileName, uInputBufferLength - sizeof(MESSAGE_TYPE));
+            RETURN_IF_FAILED(hr);
 
-			wszFileName.Detach(&m_wszScanPath);
+            wszFileName.Detach(&m_wszScanPath);
 
-			TRACE(TL_INFO, "New scan directory configured: %ls\n", pMessage->wszFileName);
+            TRACE(TL_INFO, "New scan directory configured: %ls\n", pMessage->wszFileName);
 
-			break;
-		}
-		case MESSAGE_TYPE_PRINT_STRING:
-		{
-			TRACE(TL_INFO, "New Message: %ls\n", pMessage->wszFileName);
+            if (pvOutputBuffer == NULL || uOutputBufferLength == 0)
+            {
+                break;
+            }
 
-			swprintf_s((WCHAR*)pvOutputBuffer, (size_t)uOutputBufferLength, L"Message successfully recieved");
-			*puReturnOutputBufferLength = (ULONG)wcsnlen_s((WCHAR*)pvOutputBuffer, static_cast<size_t>(uOutputBufferLength)) + 1;
+            swprintf_s((WCHAR*)pvOutputBuffer, (size_t)uOutputBufferLength, L"Scan Directory set to: \"%ls\"", pMessage->wszFileName);
+            *puReturnOutputBufferLength = (ULONG)wcsnlen_s((WCHAR*)pvOutputBuffer, static_cast<size_t>(uOutputBufferLength)) + 1;
 
-			break;
-		}
-		default:
-			TRACE(TL_INFO, "Unknown MESSAGE_TYPE recieved: %u\n", pMessage->aType);
-			break;
-	}
+            break;
+        }
+        case MESSAGE_TYPE_PRINT_STRING:
+        {
+            TRACE(TL_INFO, "New Message: %ls\n", pMessage->wszFileName);
 
-	return S_OK;
+            if (pvOutputBuffer == NULL || uOutputBufferLength == 0)
+            {
+                break;
+            }
+
+            swprintf_s((WCHAR*)pvOutputBuffer, (size_t)uOutputBufferLength, L"Message \"%ls\" successfully recieved", pMessage->wszFileName);
+            *puReturnOutputBufferLength = (ULONG)wcsnlen_s((WCHAR*)pvOutputBuffer, static_cast<size_t>(uOutputBufferLength)) + 1;
+
+            break;
+        }
+        default:
+            TRACE(TL_INFO, "Unknown MESSAGE_TYPE recieved: %u\n", pMessage->aType);
+            break;
+    }
+
+    return S_OK;
+}
+
+NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
+{
+    NTSTATUS hr = S_OK;
+
+    CAutoNameInformation pNameInfo;
+    hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &pNameInfo);
+    if (hr == STATUS_FLT_NAME_CACHE_MISS)
+    {
+        hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_FILESYSTEM_ONLY, &pNameInfo);
+        if (FAILED(hr))
+        {
+            //TRACE(TL_VERBOSE, "FSD!FSDPreOperation: FltGetFileNameInformation Failed, status=%08x\n", hr);
+            return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+        }
+    }
+    if (FAILED(hr))
+    {
+        //TRACE(TL_VERBOSE, "FSD!FSDPreOperation: FltGetFileNameInformation Failed, status=%08x\n", hr);
+        return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+    }
+
+    if (IsFilenameForScan(pNameInfo->Name))
+    {
+        CHAR szIrpCode[MAX_STRING_LENGTH] = {};
+        PrintIrpCode(pData->Iopb->MajorFunction, pData->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
+
+        if (m_fSniffer)
+        {
+            FSD_MESSAGE_FORMAT aMessage;
+            aMessage.aType = MESSAGE_TYPE_SNIFFER_NEW_IRP;
+
+            swprintf_s(aMessage.wszFileName, MAX_FILE_NAME_LENGTH, L"PID: %u File: %.*ls %S", 
+                    FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
+            
+            uSendsCount++;
+            hr = m_pPort->SendMessage((PVOID)&aMessage, sizeof(aMessage), NULL, NULL, 100U);
+            if (hr == STATUS_TIMEOUT)
+            {
+                uDropsCount++;
+                if (uDropsCount % 20 == 1)
+                {
+                    TRACE(TL_VERBOSE, "Send message got timeout %u times out of %u:(\n", uDropsCount, uSendsCount);
+                }
+            }
+            if (hr == STATUS_PORT_DISCONNECTED)
+            {
+                TRACE(TL_VERBOSE, "Port disconnected, could not send message to FSDManager\n");
+                m_fSniffer = false;
+            }
+            if (FAILED(hr))
+            {
+                TRACE(TL_VERBOSE, "Send message failed with status 0x%x\n", hr);
+            }
+        }
+        else
+        {
+            TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", 
+                FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
+        }
+    }
+
+    return S_OK;
 }
 
 NTSTATUS
 CFSDefender::FSDInstanceSetup(
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_In_ FLT_INSTANCE_SETUP_FLAGS Flags,
-	_In_ DEVICE_TYPE VolumeDeviceType,
-	_In_ FLT_FILESYSTEM_TYPE VolumeFilesystemType
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _In_ FLT_INSTANCE_SETUP_FLAGS Flags,
+    _In_ DEVICE_TYPE VolumeDeviceType,
+    _In_ FLT_FILESYSTEM_TYPE VolumeFilesystemType
 )
 /*++
 
@@ -127,22 +211,22 @@ STATUS_FLT_DO_NOT_ATTACH - do not attach
 
 --*/
 {
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(Flags);
-	UNREFERENCED_PARAMETER(VolumeDeviceType);
-	UNREFERENCED_PARAMETER(VolumeFilesystemType);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(VolumeDeviceType);
+    UNREFERENCED_PARAMETER(VolumeFilesystemType);
 
-	PAGED_CODE();
+    PAGED_CODE();
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceSetup: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceSetup: Entered\n");
 
-	return S_OK;
+    return S_OK;
 }
 
 NTSTATUS
 CFSDefender::FSDInstanceQueryTeardown(
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_In_ FLT_INSTANCE_QUERY_TEARDOWN_FLAGS Flags
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _In_ FLT_INSTANCE_QUERY_TEARDOWN_FLAGS Flags
 )
 /*++
 
@@ -169,20 +253,20 @@ Returns the status of this operation.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
 
-	PAGED_CODE();
+    PAGED_CODE();
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceQueryTeardown: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceQueryTeardown: Entered\n");
 
-	return S_OK;
+    return S_OK;
 }
 
 VOID
 CFSDefender::FSDInstanceTeardownStart(
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_In_ FLT_INSTANCE_TEARDOWN_FLAGS Flags
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _In_ FLT_INSTANCE_TEARDOWN_FLAGS Flags
 )
 /*++
 
@@ -203,18 +287,18 @@ None.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
 
-	PAGED_CODE();
+    PAGED_CODE();
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceTeardownStart: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceTeardownStart: Entered\n");
 }
 
 VOID
 CFSDefender::FSDInstanceTeardownComplete(
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_In_ FLT_INSTANCE_TEARDOWN_FLAGS Flags
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _In_ FLT_INSTANCE_TEARDOWN_FLAGS Flags
 )
 /*++
 
@@ -235,17 +319,17 @@ None.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(Flags);
 
-	PAGED_CODE();
+    PAGED_CODE();
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceTeardownComplete: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDInstanceTeardownComplete: Entered\n");
 }
 
 NTSTATUS
 CFSDefender::FSDUnload(
-	_In_ FLT_FILTER_UNLOAD_FLAGS Flags
+    _In_ FLT_FILTER_UNLOAD_FLAGS Flags
 )
 /*++
 
@@ -266,15 +350,15 @@ Returns STATUS_SUCCESS.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(Flags);
 
-	PAGED_CODE();
+    PAGED_CODE();
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDUnload: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDUnload: Entered\n");
 
-	delete g;
+    delete g;
 
-	return S_OK;
+    return S_OK;
 }
 
 ULONG_PTR CFSDefender::OperationStatusCtx = 1;
@@ -284,9 +368,9 @@ MiniFilter callback routines.
 *************************************************************************/
 FLT_PREOP_CALLBACK_STATUS
 CFSDefender::FSDPreOperation(
-	_Inout_ PFLT_CALLBACK_DATA Data,
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_Flt_CompletionContext_Outptr_ PVOID *CompletionContext
+    _Inout_ PFLT_CALLBACK_DATA Data,
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _Flt_CompletionContext_Outptr_ PVOID *CompletionContext
 )
 /*++
 
@@ -313,61 +397,48 @@ The return value is the status of the operation.
 
 --*/
 {
-	NTSTATUS hr;
+    NTSTATUS hr;
 
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(CompletionContext);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPreOperation: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPreOperation: Entered\n");
 
-	//
-	//  See if this is an operation we would like the operation status
-	//  for.  If so request it.
-	//
-	//  NOTE: most filters do NOT need to do this.  You only need to make
-	//        this call if, for example, you need to know if the oplock was
-	//        actually granted.
-	//
+    //
+    //  See if this is an operation we would like the operation status
+    //  for.  If so request it.
+    //
+    //  NOTE: most filters do NOT need to do this.  You only need to make
+    //        this call if, for example, you need to know if the oplock was
+    //        actually granted.
+    //
 
-	if (FSDDoRequestOperationStatus(Data)) {
+    if (FSDDoRequestOperationStatus(Data)) {
 
-		hr = FltRequestOperationStatusCallback(Data,
-			FSDOperationStatusCallback,
-			(PVOID)(++OperationStatusCtx));
-		if (FAILED(hr)) {
-			TRACE(TL_ERROR, "FSD!FSDPreOperation: FltRequestOperationStatusCallback Failed, status=%08x\n", hr);
-		}
-	}
+        hr = FltRequestOperationStatusCallback(Data,
+            FSDOperationStatusCallback,
+            (PVOID)(++OperationStatusCtx));
+        if (FAILED(hr)) {
+            TRACE(TL_ERROR, "FSD!FSDPreOperation: FltRequestOperationStatusCallback Failed, status=%08x\n", hr);
+        }
+    }
 
-	PFLT_FILE_NAME_INFORMATION lnameInfo;
+    if (FltObjects->FileObject == NULL)
+    {
+        return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+    }
 
-	if (FltObjects->FileObject != NULL)
-	{
-		hr = FltGetFileNameInformation(Data, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &lnameInfo);
-		if (FAILED(hr) && hr != STATUS_FLT_NAME_CACHE_MISS)
-		{
-			TRACE(TL_ERROR, "FSD!FSDPreOperation: FltGetFileNameInformation Failed, status=%08x\n", hr);
-			return FLT_PREOP_SUCCESS_WITH_CALLBACK;
-		}
+    (void)g->ProcessPreIrp(Data);   
 
-		if (NT_SUCCESS(hr) && PrintFileName(lnameInfo->Name))
-		{
-			CHAR szIrpCode[MAX_STRING_LENGTH] = {};
-			PrintIrpCode(Data->Iopb->MajorFunction, Data->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
-
-			TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", FltGetRequestorProcessId(Data), lnameInfo->Name.Length, lnameInfo->Name.Buffer, szIrpCode);
-		}
-	}
-
-	return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+    return FLT_PREOP_SUCCESS_WITH_CALLBACK;
 }
 
 VOID
 CFSDefender::FSDOperationStatusCallback(
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_In_ PFLT_IO_PARAMETER_BLOCK ParameterSnapshot,
-	_In_ NTSTATUS OperationStatus,
-	_In_ PVOID RequesterContext
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _In_ PFLT_IO_PARAMETER_BLOCK ParameterSnapshot,
+    _In_ NTSTATUS OperationStatus,
+    _In_ PVOID RequesterContext
 )
 /*++
 
@@ -402,24 +473,24 @@ The return value is the status of the operation.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(FltObjects);
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDOperationStatusCallback: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDOperationStatusCallback: Entered\n");
 
-	TRACE(TL_VERBOSE, "FSD!FSDOperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"\n",
-		OperationStatus,
-		RequesterContext,
-		ParameterSnapshot->MajorFunction,
-		ParameterSnapshot->MinorFunction,
-		FltGetIrpName(ParameterSnapshot->MajorFunction));
+    TRACE(TL_VERBOSE, "FSD!FSDOperationStatusCallback: Status=%08x ctx=%p IrpMj=%02x.%02x \"%s\"\n",
+        OperationStatus,
+        RequesterContext,
+        ParameterSnapshot->MajorFunction,
+        ParameterSnapshot->MinorFunction,
+        FltGetIrpName(ParameterSnapshot->MajorFunction));
 }
 
 FLT_POSTOP_CALLBACK_STATUS
 CFSDefender::FSDPostOperation(
-	_Inout_ PFLT_CALLBACK_DATA Data,
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_In_opt_ PVOID CompletionContext,
-	_In_ FLT_POST_OPERATION_FLAGS Flags
+    _Inout_ PFLT_CALLBACK_DATA Data,
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _In_opt_ PVOID CompletionContext,
+    _In_ FLT_POST_OPERATION_FLAGS Flags
 )
 /*++
 
@@ -448,21 +519,21 @@ The return value is the status of the operation.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(Data);
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(CompletionContext);
-	UNREFERENCED_PARAMETER(Flags);
+    UNREFERENCED_PARAMETER(Data);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
+    UNREFERENCED_PARAMETER(Flags);
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPostOperation: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPostOperation: Entered\n");
 
-	return FLT_POSTOP_FINISHED_PROCESSING;
+    return FLT_POSTOP_FINISHED_PROCESSING;
 }
 
 FLT_PREOP_CALLBACK_STATUS
 CFSDefender::FSDPreOperationNoPostOperation(
-	_Inout_ PFLT_CALLBACK_DATA Data,
-	_In_ PCFLT_RELATED_OBJECTS FltObjects,
-	_Flt_CompletionContext_Outptr_ PVOID *CompletionContext
+    _Inout_ PFLT_CALLBACK_DATA Data,
+    _In_ PCFLT_RELATED_OBJECTS FltObjects,
+    _Flt_CompletionContext_Outptr_ PVOID *CompletionContext
 )
 /*++
 
@@ -489,22 +560,22 @@ The return value is the status of the operation.
 
 --*/
 {
-	UNREFERENCED_PARAMETER(Data);
-	UNREFERENCED_PARAMETER(FltObjects);
-	UNREFERENCED_PARAMETER(CompletionContext);
+    UNREFERENCED_PARAMETER(Data);
+    UNREFERENCED_PARAMETER(FltObjects);
+    UNREFERENCED_PARAMETER(CompletionContext);
 
-	TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPreOperationNoPostOperation: Entered\n");
+    TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPreOperationNoPostOperation: Entered\n");
 
-	// This template code does not do anything with the callbackData, but
-	// rather returns FLT_PREOP_SUCCESS_NO_CALLBACK.
-	// This passes the request down to the next miniFilter in the chain.
+    // This template code does not do anything with the callbackData, but
+    // rather returns FLT_PREOP_SUCCESS_NO_CALLBACK.
+    // This passes the request down to the next miniFilter in the chain.
 
-	return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
 
 BOOLEAN
 CFSDefender::FSDDoRequestOperationStatus(
-	_In_ PFLT_CALLBACK_DATA Data
+    _In_ PFLT_CALLBACK_DATA Data
 )
 /*++
 
@@ -523,42 +594,42 @@ FALSE - If we don't
 
 --*/
 {
-	PFLT_IO_PARAMETER_BLOCK iopb = Data->Iopb;
+    PFLT_IO_PARAMETER_BLOCK iopb = Data->Iopb;
 
-	//
-	//  return boolean state based on which operations we are interested in
-	//
+    //
+    //  return boolean state based on which operations we are interested in
+    //
 
-	return (BOOLEAN)
+    return (BOOLEAN)
 
-		//
-		//  Check for oplock operations
-		//
+        //
+        //  Check for oplock operations
+        //
 
-		(((iopb->MajorFunction == IRP_MJ_FILE_SYSTEM_CONTROL) &&
-		((iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_FILTER_OPLOCK) ||
-			(iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_BATCH_OPLOCK) ||
-			(iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_OPLOCK_LEVEL_1) ||
-			(iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_OPLOCK_LEVEL_2)))
+        (((iopb->MajorFunction == IRP_MJ_FILE_SYSTEM_CONTROL) &&
+        ((iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_FILTER_OPLOCK) ||
+            (iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_BATCH_OPLOCK) ||
+            (iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_OPLOCK_LEVEL_1) ||
+            (iopb->Parameters.FileSystemControl.Common.FsControlCode == FSCTL_REQUEST_OPLOCK_LEVEL_2)))
 
-			||
+            ||
 
-			//
-			//    Check for directy change notification
-			//
+            //
+            //    Check for directy change notification
+            //
 
-			((iopb->MajorFunction == IRP_MJ_DIRECTORY_CONTROL) &&
-			(iopb->MinorFunction == IRP_MN_NOTIFY_CHANGE_DIRECTORY))
-			);
+            ((iopb->MajorFunction == IRP_MJ_DIRECTORY_CONTROL) &&
+            (iopb->MinorFunction == IRP_MN_NOTIFY_CHANGE_DIRECTORY))
+            );
 }
 
-bool CFSDefender::PrintFileName(UNICODE_STRING ustrFileName)
+bool CFSDefender::IsFilenameForScan(UNICODE_STRING ustrFileName)
 {
-	LPCWSTR wszScanDirName = g->GetScanDirectoryName();
-	if (!wszScanDirName)
-	{
-		return false;
-	}
+    LPCWSTR wszScanDirName = g->GetScanDirectoryName();
+    if (!wszScanDirName)
+    {
+        return false;
+    }
 
-	return wcscmp(wszScanDirName, ustrFileName.Buffer) == 0;
+    return wcsstr(ustrFileName.Buffer, wszScanDirName) != NULL;
 }

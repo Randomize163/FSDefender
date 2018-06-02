@@ -4,15 +4,15 @@
 #include "AutoPtr.h"
 
 HRESULT UtilCreateThreadSimple(
-	HANDLE*					phThread,
-	LPTHREAD_START_ROUTINE	pvfThreadMain,
-	LPVOID					pvContext
+    HANDLE*                    phThread,
+    LPTHREAD_START_ROUTINE    pvfThreadMain,
+    LPVOID                    pvContext
 ){
-	*phThread = CreateThread(NULL, 0, pvfThreadMain, pvContext, 0, NULL);
-	if (!*phThread)
-	{
-		return GetLastError();
-	}
+    *phThread = CreateThread(NULL, 0, pvfThreadMain, pvContext, 0, NULL);
+    if (!*phThread)
+    {
+        return GetLastError();
+    }
 
-	return S_OK;
+    return S_OK;
 }

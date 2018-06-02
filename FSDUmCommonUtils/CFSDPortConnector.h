@@ -3,49 +3,58 @@
 #include <windows.h>
 #include <fltuser.h>
 
-#define MAX_RECIEVE_BUFFER_SIZE 256
+#define MAX_RECIEVE_BUFFER_SIZE 1024
 
 struct CFSDPortConnectorMessage
 {
-	union
-	{
-		FILTER_MESSAGE_HEADER	aRecieveHeader;
-		FILTER_REPLY_HEADER     aReplyHeader;
-	};
+    CFSDPortConnectorMessage()
+    {
+        memset(this, 0, sizeof(*this));
+    }
 
-	BYTE pBuffer[MAX_RECIEVE_BUFFER_SIZE];
+    union
+    {
+        FILTER_MESSAGE_HEADER aRecieveHeader;
+        FILTER_REPLY_HEADER   aReplyHeader;
+    };
+
+    BYTE pBuffer[MAX_RECIEVE_BUFFER_SIZE];
+
+    OVERLAPPED  aOverlapped;
 };
-
-static_assert(sizeof(CFSDPortConnectorMessage) == sizeof(FILTER_MESSAGE_HEADER) + MAX_RECIEVE_BUFFER_SIZE, "Invalid size");
-static_assert(sizeof(CFSDPortConnectorMessage) == sizeof(FILTER_REPLY_HEADER) + MAX_RECIEVE_BUFFER_SIZE, "Invalid size");
 
 class CFSDPortConnector
 {
 public:
-	CFSDPortConnector();
+    CFSDPortConnector();
 
-	~CFSDPortConnector();
+    ~CFSDPortConnector();
 
-	HRESULT Initialize(LPCWSTR wszPortName);
+    HRESULT Initialize(LPCWSTR wszPortName);
 
-	void Close();
+    void Close();
 
-	HRESULT SendMessage(
-		LPVOID	lpInBuffer,
-		DWORD	dwInBufferSize,
-		LPVOID  lpReplyBuffer,
-		LPDWORD lpReplyBufferSize
-	);
+    HRESULT SendMessage(
+        LPVOID    lpInBuffer,
+        DWORD    dwInBufferSize,
+        LPVOID  lpReplyBuffer,
+        LPDWORD lpReplyBufferSize
+    );
 
-	HRESULT RecieveMessage(
-		CFSDPortConnectorMessage* pMessage
-	);
+    HRESULT RecieveMessage(
+        CFSDPortConnectorMessage* pMessage
+    );
 
-	HRESULT ReplyMessage(
-		CFSDPortConnectorMessage* pMessage
-	);
-	
+    HRESULT ReplyMessage(
+        CFSDPortConnectorMessage* pMessage
+    );
+
+    HANDLE GetHandle() const
+    {
+        return m_hPort;
+    }
+
 private:
-	HANDLE m_hPort;
+    HANDLE m_hPort;
 };
 

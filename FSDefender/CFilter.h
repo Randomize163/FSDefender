@@ -4,25 +4,25 @@
 class CFilter
 {
 public:
-	CFilter();
+    CFilter();
 
-	~CFilter();
+    ~CFilter();
 
-	NTSTATUS Initialize(
-		_In_ PDRIVER_OBJECT		     pDriverObject,
-		_In_ const FLT_REGISTRATION* pFilterRegistration
-	);
+    NTSTATUS Initialize(
+        _In_ PDRIVER_OBJECT             pDriverObject,
+        _In_ const FLT_REGISTRATION* pFilterRegistration
+    );
 
-	void Close();
+    void Close();
 
-	NTSTATUS StartFiltering();
-	
-	PFLT_FILTER Handle() const
-	{
-		return m_hFilter;
-	}
+    NTSTATUS StartFiltering();
+
+    PFLT_FILTER Handle() const
+    {
+        return m_hFilter;
+    }
 
 private:
-	PFLT_FILTER m_hFilter;
+    PFLT_FILTER m_hFilter;
 };
 
