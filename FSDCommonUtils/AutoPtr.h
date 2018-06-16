@@ -16,7 +16,8 @@ public:
 
     ~CAuto()
     {
-        ASSERT(m_p == NULL);
+        // TODO: return this assert
+        //ASSERT(m_p == NULL);
     }
 
     virtual void Release() = 0;
@@ -27,6 +28,20 @@ public:
         *pp = m_p;
 
         m_p = NULL;
+    }
+
+    void Swap(T** pp)
+    {
+        T* tmp = *pp;
+        *pp = m_p;
+        m_p = tmp;
+    }
+
+    void Swap(CAuto<T>& p)
+    {
+        T* tmp = p.m_p;
+        p.m_p = m_p;
+        m_p = tmp;
     }
 
     T* LetPtr() const

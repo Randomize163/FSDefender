@@ -149,6 +149,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <AdditionalIncludeDirectories>$(SolutionDir)\FSDUmCommonUtils;$(SolutionDir)\FSDCommonDefs;$(SolutionDir)\FSDCommonUtils;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAsManaged>false</CompileAsManaged>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;FSDUmCommonUtils.lib;Shlwapi.lib</AdditionalDependencies>

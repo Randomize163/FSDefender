@@ -4,6 +4,9 @@
 #include "CFilter.h"
 #include "CFSDCommunicationPort.h"
 #include "AutoPtr.h"
+#include "FSDList.h"
+
+struct IrpOperationItem;
 
 class CFSDefender
 {
@@ -15,7 +18,7 @@ public:
         PDRIVER_OBJECT          pDriverObject
     );
 
-    //void Close();
+    void Close();
 
     LPCWSTR GetScanDirectoryName() const
     {
@@ -143,11 +146,34 @@ private:
     static bool IsFilenameForScan(UNICODE_STRING);
 
 private:
+    bool                            m_fClosed;
+
     CAutoPtr<CFilter>               m_pFilter;
     CAutoPtr<CFSDCommunicationPort> m_pPort;
     CAutoStringW                    m_wszScanPath;
 
     bool                            m_fSniffer;
-    ULONG                           uDropsCount;
-    ULONG                           uSendsCount;
+
+    CFSDList<IrpOperationItem>      m_aIrpOpsQueue;
+};
+
+struct IrpOperationItem : public ListItem
+{
+    ULONG               m_uIrpMajorCode;
+    ULONG               m_uIrpMinorCode;
+    ULONG               m_uPid;
+    size_t              m_cbBuffer;
+    CAutoArrayPtr<BYTE> m_pBuffer;
+
+    IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid)
+        : m_uIrpMajorCode(uIrpMajorCode)
+        , m_uIrpMinorCode(uIrpMinorCode)
+        , m_uPid(uPid)
+        , m_cbBuffer(0)
+    {}
+
+    size_t PureSize() const
+    {
+        return sizeof(IrpOperationItem) - sizeof(m_pBuffer) + m_cbBuffer;
+    }
 };

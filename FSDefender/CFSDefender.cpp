@@ -8,17 +8,20 @@
 
 extern CFSDefender* g;
 
-CFSDefender::CFSDefender()    
+CFSDefender::CFSDefender()
     : m_pFilter()
     , m_pPort()
     , m_wszScanPath()
     , m_fSniffer(false)
-    , uDropsCount(0)
-    , uSendsCount(0)
+    , m_fClosed(false)
 {}
 
 CFSDefender::~CFSDefender()
 {
+    if (!m_fClosed)
+    {
+        Close();
+    }
 }
 
 NTSTATUS CFSDefender::Initialize(
@@ -44,6 +47,28 @@ NTSTATUS CFSDefender::Initialize(
     RETURN_IF_FAILED(hr);
 
     return S_OK;
+}
+
+void CFSDefender::Close()
+{
+    ASSERT(!m_fClosed);
+    
+    m_fSniffer = false;
+    m_pPort->Close();
+    m_pFilter->Close();
+
+    for (;;)
+    {
+        if (m_aIrpOpsQueue.Size() == 0)
+        {
+            break;
+        }
+
+        IrpOperationItem* pItem = m_aIrpOpsQueue.PopFront();
+        ASSERT(pItem != NULL);
+
+        delete pItem;
+    }
 }
 
 NTSTATUS CFSDefender::ConnectClient(PFLT_PORT pClientPort)
@@ -108,6 +133,43 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
 
             break;
         }
+        case MESSAGE_TYPE_QUERY_NEW_OPS:
+        {
+            FSD_QUERY_NEW_OPS_RESPONSE_FORMAT* pResponse = static_cast<FSD_QUERY_NEW_OPS_RESPONSE_FORMAT*>(pvOutputBuffer);
+            FSD_OPERATION_DESCRIPTION* pOpDescription = pResponse->pData;
+
+            size_t cbData = 0;
+            for (;;)
+            {
+                IrpOperationItem* pFront = m_aIrpOpsQueue.Front();
+                if (!pFront)
+                {
+                    break;
+                }
+
+                if (uOutputBufferLength < cbData + pFront->PureSize())
+                {
+                    break;
+                }
+
+                CAutoPtr<IrpOperationItem> pIrpOp = m_aIrpOpsQueue.PopFront();
+
+                pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
+                pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
+                pOpDescription->uPid       = pIrpOp->m_uPid;
+                pOpDescription->cbData     = pIrpOp->m_cbBuffer;
+
+                memcpy(
+                    (FSD_OPERATION_DESCRIPTION*)(pOpDescription + cbData)->pbData, 
+                    pIrpOp->m_pBuffer.LetPtr(), 
+                    pIrpOp->m_cbBuffer
+                );
+
+                cbData += pIrpOp->PureSize();
+            }
+
+            *puReturnOutputBufferLength = numeric_cast<ULONG>(cbData);
+        }
         default:
             TRACE(TL_INFO, "Unknown MESSAGE_TYPE recieved: %u\n", pMessage->aType);
             break;
@@ -139,39 +201,20 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
 
     if (IsFilenameForScan(pNameInfo->Name))
     {
-        CHAR szIrpCode[MAX_STRING_LENGTH] = {};
-        PrintIrpCode(pData->Iopb->MajorFunction, pData->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
-
         if (m_fSniffer)
         {
-            FSD_MESSAGE_FORMAT aMessage;
-            aMessage.aType = MESSAGE_TYPE_SNIFFER_NEW_IRP;
+            IrpOperationItem* pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
+                                                           pData->Iopb->MinorFunction,
+                                                           FltGetRequestorProcessId(pData));
+            RETURN_IF_FAILED_ALLOC(pItem);
 
-            swprintf_s(aMessage.wszFileName, MAX_FILE_NAME_LENGTH, L"PID: %u File: %.*ls %S", 
-                    FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
-            
-            uSendsCount++;
-            hr = m_pPort->SendMessage((PVOID)&aMessage, sizeof(aMessage), NULL, NULL, 100U);
-            if (hr == STATUS_TIMEOUT)
-            {
-                uDropsCount++;
-                if (uDropsCount % 20 == 1)
-                {
-                    TRACE(TL_VERBOSE, "Send message got timeout %u times out of %u:(\n", uDropsCount, uSendsCount);
-                }
-            }
-            if (hr == STATUS_PORT_DISCONNECTED)
-            {
-                TRACE(TL_VERBOSE, "Port disconnected, could not send message to FSDManager\n");
-                m_fSniffer = false;
-            }
-            if (FAILED(hr))
-            {
-                TRACE(TL_VERBOSE, "Send message failed with status 0x%x\n", hr);
-            }
+            m_aIrpOpsQueue.PushBack(pItem);
         }
         else
         {
+            CHAR szIrpCode[MAX_STRING_LENGTH] = {};
+            PrintIrpCode(pData->Iopb->MajorFunction, pData->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
+
             TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", 
                 FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
         }

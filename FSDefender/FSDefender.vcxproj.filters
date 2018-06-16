@@ -49,5 +49,8 @@
     <ClInclude Include="FSDRegistrationInfo.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\FSDCommonUtils\FSDList.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

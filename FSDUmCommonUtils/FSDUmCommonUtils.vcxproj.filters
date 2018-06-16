@@ -24,6 +24,9 @@
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CFSDPortConnector.h">
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\FSDCommonUtils\FSDCommonInclude.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

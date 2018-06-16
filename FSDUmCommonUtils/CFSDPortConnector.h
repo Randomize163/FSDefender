@@ -12,6 +12,11 @@ struct CFSDPortConnectorMessage
         memset(this, 0, sizeof(*this));
     }
 
+    static CFSDPortConnectorMessage* CastFrom(LPOVERLAPPED pOverlapped)
+    {
+        return CONTAINING_RECORD(pOverlapped, CFSDPortConnectorMessage, aOverlapped);
+    }
+
     union
     {
         FILTER_MESSAGE_HEADER aRecieveHeader;

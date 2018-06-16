@@ -194,6 +194,7 @@
     <FilesToPackage Include="$(TargetPath)" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\FSDCommonUtils\FSDList.h" />
     <ClInclude Include="CFilter.h" />
     <ClInclude Include="CFSDefender.h" />
     <ClInclude Include="FSDRegistrationInfo.h" />

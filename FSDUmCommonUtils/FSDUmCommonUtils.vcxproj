@@ -149,12 +149,14 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.cpp" />
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
     <ClCompile Include="CFSDPortConnector.cpp" />
     <ClCompile Include="FSDThreadUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\FSDCommonUtils\AutoPtr.h" />
+    <ClInclude Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.h" />
     <ClInclude Include="..\FSDCommonUtils\FSDCommonInclude.h" />
     <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h" />
     <ClInclude Include="CFSDPortConnector.h" />
