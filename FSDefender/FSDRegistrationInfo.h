@@ -12,12 +12,7 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     0,
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
-
-    { IRP_MJ_CREATE_NAMED_PIPE,
-    0,
-    CFSDefender::FSDPreOperation,
-    CFSDefender::FSDPostOperation },
-
+   
     { IRP_MJ_CLOSE,
     0,
     CFSDefender::FSDPreOperation,
@@ -43,6 +38,16 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
 
+    /*{ IRP_MJ_DIRECTORY_CONTROL,
+    0,
+    CFSDefender::FSDPreOperation,
+    CFSDefender::FSDPostOperation },
+
+    { IRP_MJ_CREATE_NAMED_PIPE,
+    0,
+    CFSDefender::FSDPreOperation,
+    CFSDefender::FSDPostOperation },
+
     { IRP_MJ_QUERY_EA,
     0,
     CFSDefender::FSDPreOperation,
@@ -64,11 +69,6 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     CFSDefender::FSDPostOperation },
 
     { IRP_MJ_SET_VOLUME_INFORMATION,
-    0,
-    CFSDefender::FSDPreOperation,
-    CFSDefender::FSDPostOperation },
-
-    { IRP_MJ_DIRECTORY_CONTROL,
     0,
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
@@ -167,7 +167,7 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     0,
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
-
+    
     { IRP_MJ_NETWORK_QUERY_OPEN,
     0,
     CFSDefender::FSDPreOperation,
@@ -201,7 +201,7 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     { IRP_MJ_VOLUME_DISMOUNT,
     0,
     CFSDefender::FSDPreOperation,
-    CFSDefender::FSDPostOperation },
+    CFSDefender::FSDPostOperation },*/
 
 { IRP_MJ_OPERATION_END }
 };
