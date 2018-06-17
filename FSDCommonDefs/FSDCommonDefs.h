@@ -37,21 +37,38 @@ enum IRP_MAJOR_TYPE
     IRP_SET_INFORMATION     = 0x06,
 };
 
+#pragma warning(disable : 4200)  // zero sized array
 struct FSD_OPERATION_DESCRIPTION
 {
     ULONG          uPid;
     ULONG          uMajorType;
     ULONG          uMinorType;
     size_t         cbData;
-    char*          pbData;
+    BYTE           pData[];
 
     size_t PureSize() const
     {
-        return sizeof(FSD_OPERATION_DESCRIPTION) - sizeof(pbData) + cbData;
+        return sizeof(FSD_OPERATION_DESCRIPTION) + cbData;
+    }
+
+    FSD_OPERATION_DESCRIPTION* GetNext()
+    {
+        return (FSD_OPERATION_DESCRIPTION*)((BYTE*)this + PureSize());
     }
 };
 
 struct FSD_QUERY_NEW_OPS_RESPONSE_FORMAT
 {
-    FSD_OPERATION_DESCRIPTION* pData;
+    size_t cbData;
+    BYTE   pData[];
+
+    size_t PureSize() const
+    {
+        return sizeof(FSD_QUERY_NEW_OPS_RESPONSE_FORMAT) + cbData;
+    }
+
+    FSD_OPERATION_DESCRIPTION* GetFirst()
+    {
+        return (FSD_OPERATION_DESCRIPTION*)pData;
+    }
 };

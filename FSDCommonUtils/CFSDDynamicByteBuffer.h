@@ -10,9 +10,9 @@ public:
     ~CFSDDynamicByteBuffer();
 
     NTSTATUS Initialize(size_t cbReservation);
-    
-    NTSTATUS Reserve(size_t cbReservation);
 
+    NTSTATUS Grow();
+    
     NTSTATUS Append(BYTE* pbData, size_t cbData);
 
     void Clear()
@@ -34,6 +34,9 @@ public:
     {
         return m_cbReservedSize;
     }
+
+private:
+    NTSTATUS Reserve(size_t cbReservation);
 
 private:
     CAutoArrayPtr<BYTE> m_pBuffer;

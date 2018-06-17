@@ -136,11 +136,13 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
         case MESSAGE_TYPE_QUERY_NEW_OPS:
         {
             FSD_QUERY_NEW_OPS_RESPONSE_FORMAT* pResponse = static_cast<FSD_QUERY_NEW_OPS_RESPONSE_FORMAT*>(pvOutputBuffer);
-            FSD_OPERATION_DESCRIPTION* pOpDescription = pResponse->pData;
+            FSD_OPERATION_DESCRIPTION* pOpDescription = pResponse->GetFirst();
 
             size_t cbData = 0;
             for (;;)
             {
+                CAutoSpinLock aCS(&m_aIrpOpsQueueLock);
+
                 IrpOperationItem* pFront = m_aIrpOpsQueue.Front();
                 if (!pFront)
                 {
@@ -154,21 +156,26 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
 
                 CAutoPtr<IrpOperationItem> pIrpOp = m_aIrpOpsQueue.PopFront();
 
+                aCS.Release();
+
                 pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
                 pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
                 pOpDescription->uPid       = pIrpOp->m_uPid;
                 pOpDescription->cbData     = pIrpOp->m_cbBuffer;
 
                 memcpy(
-                    (FSD_OPERATION_DESCRIPTION*)(pOpDescription + cbData)->pbData, 
+                    pOpDescription->pData,
                     pIrpOp->m_pBuffer.LetPtr(), 
                     pIrpOp->m_cbBuffer
                 );
 
-                cbData += pIrpOp->PureSize();
+                cbData += pOpDescription->PureSize();
+                pOpDescription = pOpDescription->GetNext();
             }
 
             *puReturnOutputBufferLength = numeric_cast<ULONG>(cbData);
+
+            break;
         }
         default:
             TRACE(TL_INFO, "Unknown MESSAGE_TYPE recieved: %u\n", pMessage->aType);
@@ -208,7 +215,11 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
                                                            FltGetRequestorProcessId(pData));
             RETURN_IF_FAILED_ALLOC(pItem);
 
+            CAutoSpinLock aCS(&m_aIrpOpsQueueLock);
+
             m_aIrpOpsQueue.PushBack(pItem);
+            
+            aCS.Release();
         }
         else
         {

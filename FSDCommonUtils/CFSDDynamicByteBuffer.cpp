@@ -2,6 +2,7 @@
 
 CFSDDynamicByteBuffer::CFSDDynamicByteBuffer()
     : m_cbEffectiveSize(0)
+    , m_cbReservedSize(0)
 {}
 
 CFSDDynamicByteBuffer::~CFSDDynamicByteBuffer()
@@ -22,10 +23,22 @@ NTSTATUS CFSDDynamicByteBuffer::Reserve(size_t cbReservation)
     CAutoArrayPtr<BYTE> pNewBuffer = new BYTE[m_cbReservedSize + cbReservation];
     RETURN_IF_FAILED_ALLOC(pNewBuffer);
 
+    m_cbReservedSize += cbReservation;
+
     memcpy(pNewBuffer.LetPtr(), m_pBuffer.LetPtr(), m_cbEffectiveSize);
 
     pNewBuffer.Swap(m_pBuffer);
 
+    return S_OK;
+}
+
+NTSTATUS CFSDDynamicByteBuffer::Grow()
+{
+    HRESULT hr = S_OK;
+
+    hr = Reserve(((m_cbReservedSize * 3) / 2));
+    RETURN_IF_FAILED(hr);
+ 
     return S_OK;
 }
 
@@ -35,12 +48,11 @@ NTSTATUS CFSDDynamicByteBuffer::Append(BYTE* pbData, size_t cbData)
 
     if (cbData > GetSpareSize())
     {
-        hr = Reserve(max(m_cbReservedSize/2, cbData));
+        hr = Grow();
         RETURN_IF_FAILED(hr);
     }
     
-    // TODO: return this assert
-    //ASSERT(cbData <= GetSpareSize());
+    ASSERT(cbData <= GetSpareSize());
 
     memcpy(m_pBuffer.LetPtr() + m_cbEffectiveSize, pbData, cbData);
 

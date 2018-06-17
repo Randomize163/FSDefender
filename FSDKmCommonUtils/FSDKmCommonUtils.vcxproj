@@ -42,12 +42,14 @@
     <ClInclude Include="CFSDCommunicationPort.h" />
     <ClInclude Include="FSDKmCommonInclude.h" />
     <ClInclude Include="FSDMemoryUtils.h" />
+    <ClInclude Include="FSDSynchronizationUtils.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
     <ClCompile Include="..\FSDUmCommonUtils\FSDFilterUtils.cpp" />
     <ClCompile Include="CFSDCommunicationPort.cpp" />
     <ClCompile Include="FSDMemoryUtils.cpp" />
+    <ClCompile Include="FSDSynchronizationUtils.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{89964F63-08C7-4356-AE31-E71B059E54DA}</ProjectGuid>

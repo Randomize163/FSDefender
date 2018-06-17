@@ -5,6 +5,7 @@
 #include "CFSDCommunicationPort.h"
 #include "AutoPtr.h"
 #include "FSDList.h"
+#include "FSDSynchronizationUtils.h"
 
 struct IrpOperationItem;
 
@@ -155,6 +156,7 @@ private:
     bool                            m_fSniffer;
 
     CFSDList<IrpOperationItem>      m_aIrpOpsQueue;
+    CSpinLock                       m_aIrpOpsQueueLock;
 };
 
 struct IrpOperationItem : public ListItem

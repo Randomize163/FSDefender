@@ -16,8 +16,7 @@ public:
 
     ~CAuto()
     {
-        // TODO: return this assert
-        //ASSERT(m_p == NULL);
+        ASSERT(m_p == NULL);
     }
 
     virtual void Release() = 0;

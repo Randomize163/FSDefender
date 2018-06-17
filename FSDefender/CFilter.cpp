@@ -29,6 +29,7 @@ void CFilter::Close()
     ASSERT(m_hFilter);
 
     FltUnregisterFilter(m_hFilter);
+    m_hFilter = NULL;
 }
 
 NTSTATUS CFilter::StartFiltering()

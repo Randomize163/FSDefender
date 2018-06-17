@@ -36,6 +36,9 @@
     <ClInclude Include="FSDKmCommonInclude.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSDSynchronizationUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CFSDCommunicationPort.cpp">
@@ -48,6 +51,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSDMemoryUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSDSynchronizationUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

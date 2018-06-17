@@ -95,6 +95,8 @@ public:
 
         m_TailItem.m_pPrev->m_pNext = pItem;
         m_TailItem.m_pPrev          = pItem;
+
+        m_cSize++;
     }
 
     T* PopBack()
