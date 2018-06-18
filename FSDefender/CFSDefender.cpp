@@ -107,7 +107,7 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
         case MESSAGE_TYPE_SET_SCAN_DIRECTORY:
         {
             CAutoStringW wszFileName;
-            hr = NewCopyStringW(&wszFileName, pMessage->wszFileName, uInputBufferLength - sizeof(MESSAGE_TYPE));
+            hr = NewCopyStringW(&wszFileName, pMessage->wszFileName, sizeof(pMessage->wszFileName));
             RETURN_IF_FAILED(hr);
 
             wszFileName.Detach(&m_wszScanPath);
@@ -222,6 +222,16 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
                                                            pData->Iopb->MinorFunction,
                                                            FltGetRequestorProcessId(pData));
             RETURN_IF_FAILED_ALLOC(pItem);
+
+            size_t cbItemData = pNameInfo->Name.Length + sizeof(WCHAR);
+            CAutoArrayPtr<BYTE> pItemData = new BYTE[cbItemData];
+            RETURN_IF_FAILED_ALLOC(pItem);
+
+            hr = CopyStringW((LPWSTR)pItemData.LetPtr(), pNameInfo->Name.Buffer, cbItemData);
+            RETURN_IF_FAILED(hr);
+
+            pItem->m_pBuffer.Swap(pItemData);
+            pItem->m_cbBuffer = cbItemData;
 
             m_aIrpOpsQueue.Push(pItem);
         }

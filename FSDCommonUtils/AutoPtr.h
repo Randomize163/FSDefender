@@ -91,7 +91,7 @@ public:
         return m_p; 
     }
 
-    virtual void Release()
+    virtual void Release() override
     {
         if (this->m_p)
         {
@@ -116,7 +116,12 @@ public:
         : CAutoPtr<T>(p)
     {}
 
-    void Release() 
+    ~CAutoArrayPtr()
+    {
+        Release();
+    }
+
+    virtual void Release() override
     {
         if (this->m_p)
         {
@@ -150,7 +155,7 @@ public:
         Release();
     }
 
-    virtual void Release()
+    virtual void Release() override
     {
         if (this->m_p)
         {
