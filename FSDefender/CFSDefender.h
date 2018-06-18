@@ -4,8 +4,7 @@
 #include "CFilter.h"
 #include "CFSDCommunicationPort.h"
 #include "AutoPtr.h"
-#include "FSDList.h"
-#include "FSDSynchronizationUtils.h"
+#include "FSDAtomicQueue.h"
 
 struct IrpOperationItem;
 
@@ -155,11 +154,11 @@ private:
 
     bool                            m_fSniffer;
 
-    CFSDList<IrpOperationItem>      m_aIrpOpsQueue;
-    CSpinLock                       m_aIrpOpsQueueLock;
+    CAtomicQueue<IrpOperationItem>  m_aIrpOpsQueue;
+    IrpOperationItem*               m_pItemsReadyForSend;
 };
 
-struct IrpOperationItem : public ListItem
+struct IrpOperationItem : public SingleListItem
 {
     ULONG               m_uIrpMajorCode;
     ULONG               m_uIrpMinorCode;

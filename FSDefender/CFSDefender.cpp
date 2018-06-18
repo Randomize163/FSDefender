@@ -14,6 +14,7 @@ CFSDefender::CFSDefender()
     , m_wszScanPath()
     , m_fSniffer(false)
     , m_fClosed(false)
+    , m_pItemsReadyForSend(NULL)
 {}
 
 CFSDefender::~CFSDefender()
@@ -59,15 +60,19 @@ void CFSDefender::Close()
 
     for (;;)
     {
-        if (m_aIrpOpsQueue.Size() == 0)
+        if (!m_pItemsReadyForSend)
         {
-            break;
+            m_pItemsReadyForSend = m_aIrpOpsQueue.PopAll();
+            if (!m_pItemsReadyForSend)
+            {
+                break;
+            }
         }
 
-        IrpOperationItem* pItem = m_aIrpOpsQueue.PopFront();
-        ASSERT(pItem != NULL);
+        IrpOperationItem* pNextOperation = m_aIrpOpsQueue.Next(m_pItemsReadyForSend);
+        delete m_pItemsReadyForSend;
 
-        delete pItem;
+        m_pItemsReadyForSend = pNextOperation;
     }
 }
 
@@ -138,25 +143,24 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
             FSD_QUERY_NEW_OPS_RESPONSE_FORMAT* pResponse = static_cast<FSD_QUERY_NEW_OPS_RESPONSE_FORMAT*>(pvOutputBuffer);
             FSD_OPERATION_DESCRIPTION* pOpDescription = pResponse->GetFirst();
 
+            if (!m_pItemsReadyForSend)
+            {
+                m_pItemsReadyForSend = m_aIrpOpsQueue.PopAll();
+            }
+
             size_t cbData = 0;
             for (;;)
             {
-                CAutoSpinLock aCS(&m_aIrpOpsQueueLock);
-
-                IrpOperationItem* pFront = m_aIrpOpsQueue.Front();
-                if (!pFront)
+                IrpOperationItem* pIrpOp = m_pItemsReadyForSend;
+                if (!pIrpOp)
                 {
                     break;
                 }
 
-                if (uOutputBufferLength < cbData + pFront->PureSize())
+                if (uOutputBufferLength < cbData + pIrpOp->PureSize())
                 {
                     break;
                 }
-
-                CAutoPtr<IrpOperationItem> pIrpOp = m_aIrpOpsQueue.PopFront();
-
-                aCS.Release();
 
                 pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
                 pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
@@ -171,6 +175,10 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
 
                 cbData += pOpDescription->PureSize();
                 pOpDescription = pOpDescription->GetNext();
+                
+                m_pItemsReadyForSend = m_aIrpOpsQueue.Next(m_pItemsReadyForSend);
+
+                delete pIrpOp;
             }
 
             *puReturnOutputBufferLength = numeric_cast<ULONG>(cbData);
@@ -215,11 +223,7 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
                                                            FltGetRequestorProcessId(pData));
             RETURN_IF_FAILED_ALLOC(pItem);
 
-            CAutoSpinLock aCS(&m_aIrpOpsQueueLock);
-
-            m_aIrpOpsQueue.PushBack(pItem);
-            
-            aCS.Release();
+            m_aIrpOpsQueue.Push(pItem);
         }
         else
         {
