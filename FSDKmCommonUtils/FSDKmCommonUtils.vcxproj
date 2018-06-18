@@ -40,6 +40,7 @@
     <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h" />
     <ClInclude Include="..\FSDUmCommonUtils\FSDFilterUtils.h" />
     <ClInclude Include="CFSDCommunicationPort.h" />
+    <ClInclude Include="FSDAtomicQueue.h" />
     <ClInclude Include="FSDKmCommonInclude.h" />
     <ClInclude Include="FSDMemoryUtils.h" />
     <ClInclude Include="FSDSynchronizationUtils.h" />

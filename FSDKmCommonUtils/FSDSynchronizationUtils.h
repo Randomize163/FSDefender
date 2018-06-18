@@ -75,3 +75,17 @@ private:
 };
 
 typedef CAutoLock<CSpinLock> CAutoSpinLock;
+
+template<class T>
+inline T* UtilInterlockedCompareExchangePointer(T* volatile* ppDest, T* pExchange, T* pComperand)
+{
+    return static_cast<T*>(InterlockedCompareExchangePointer(
+        reinterpret_cast<PVOID volatile*>(ppDest), pExchange, pComperand));
+}
+
+template<class T>
+inline T* UtilInterlockedExchangePointer(T* volatile* ppDest, T* pExchange)
+{
+    return static_cast<T*>(InterlockedExchangePointer(
+        reinterpret_cast<PVOID volatile*>(ppDest), pExchange));
+}

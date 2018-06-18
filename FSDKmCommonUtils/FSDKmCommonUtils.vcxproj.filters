@@ -39,6 +39,9 @@
     <ClInclude Include="FSDSynchronizationUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSDAtomicQueue.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CFSDCommunicationPort.cpp">

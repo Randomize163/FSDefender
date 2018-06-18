@@ -11,6 +11,15 @@ struct ListItem
     ListItem* m_pPrev;
 };
 
+struct SingleListItem
+{
+    SingleListItem()
+        : m_pNext(NULL)
+    {}
+
+    SingleListItem* m_pNext;
+};
+
 template<class T>
 class CFSDList
 {
