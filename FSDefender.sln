@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "User", "User", "{F63D630E-9
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FSDManager", "FSDManager\FSDManager.vcxproj", "{F59848EE-721C-4C80-A6A3-ED074C3B9C0B}"
 	ProjectSection(ProjectDependencies) = postProject
-		{70B2E1D3-98B7-4409-AF61-2AA7BC7DFCC0} = {70B2E1D3-98B7-4409-AF61-2AA7BC7DFCC0}
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366} = {B72B59D6-A53C-40D8-B197-4A03A7B38366}
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "CommonDefs", "CommonDefs", "{C5AEC6DE-6881-4BB1-ADB0-6240894C84BF}"
@@ -27,6 +27,8 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FSDKmCommonUtils", "FSDKmCommonUtils\FSDKmCommonUtils.vcxproj", "{89964F63-08C7-4356-AE31-E71B059E54DA}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "FSDUmCommonUtils", "FSDUmCommonUtils\FSDUmCommonUtils.vcxproj", "{70B2E1D3-98B7-4409-AF61-2AA7BC7DFCC0}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LZJDistance", "LZJDistance\LZJDistance.vcxproj", "{B72B59D6-A53C-40D8-B197-4A03A7B38366}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -116,6 +118,18 @@ Global
 		{70B2E1D3-98B7-4409-AF61-2AA7BC7DFCC0}.Release|x64.Build.0 = Release|x64
 		{70B2E1D3-98B7-4409-AF61-2AA7BC7DFCC0}.Release|x86.ActiveCfg = Release|Win32
 		{70B2E1D3-98B7-4409-AF61-2AA7BC7DFCC0}.Release|x86.Build.0 = Release|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Debug|ARM.ActiveCfg = Debug|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Debug|ARM64.ActiveCfg = Debug|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Debug|x64.ActiveCfg = Debug|x64
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Debug|x64.Build.0 = Debug|x64
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Debug|x86.ActiveCfg = Debug|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Debug|x86.Build.0 = Debug|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Release|ARM.ActiveCfg = Release|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Release|ARM64.ActiveCfg = Release|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Release|x64.ActiveCfg = Release|x64
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Release|x64.Build.0 = Release|x64
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Release|x86.ActiveCfg = Release|Win32
+		{B72B59D6-A53C-40D8-B197-4A03A7B38366}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
