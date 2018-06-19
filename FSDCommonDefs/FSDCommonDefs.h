@@ -9,6 +9,7 @@ const LPCWSTR g_wszFSDPortName = L"\\FSDCommunicationPort";
 #define MAX_STRING_LENGTH 256
 #define MAX_FILE_NAME_LENGTH MAX_STRING_LENGTH
 #define MAX_FILE_NAME_SIZE (MAX_FILE_NAME_LENGTH * sizeof(WCHAR))
+#define MAX_FILE_EXTENTION_LENGTH 10
 
 enum MESSAGE_TYPE 
 {
@@ -38,6 +39,20 @@ enum IRP_MAJOR_TYPE
 };
 
 #pragma warning(disable : 4200)  // zero sized array
+struct FSD_OPERATION_WRITE
+{
+    ULONG  uWriteEntropy;
+    WCHAR  wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
+
+    size_t cbFileName;
+    BYTE   pFileName[];
+
+    size_t PureSize() const
+    {
+        return sizeof(FSD_OPERATION_WRITE) + cbFileName;
+    }
+};
+
 struct FSD_OPERATION_DESCRIPTION
 {
     ULONG          uPid;
@@ -49,6 +64,14 @@ struct FSD_OPERATION_DESCRIPTION
     size_t PureSize() const
     {
         return sizeof(FSD_OPERATION_DESCRIPTION) + cbData;
+    }
+
+    LPCWSTR GetFileExtention()
+    {
+        if (uMinorType == IRP_WRITE)
+        {
+            return ((FSD_OPERATION_WRITE*)pData)->wszFileExtention;
+        }
     }
 
     FSD_OPERATION_DESCRIPTION* GetNext()
