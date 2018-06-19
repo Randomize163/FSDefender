@@ -92,6 +92,16 @@ void CFSDefender::DisconnectClient(PFLT_PORT pClientPort)
     return;
 }
 
+void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescription, IrpOperationItem* pIrpOp)
+{
+    pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
+    pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
+    pOpDescription->uPid       = pIrpOp->m_uPid;
+    pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.LetPtr(), pIrpOp->m_cbFileName);
+    pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
+    pOpDescription->cbData = pOpDescription->DataPureSize();
+}
+
 NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBufferLength, OUT PVOID pvOutputBuffer, IN ULONG uOutputBufferLength, OUT PULONG puReturnOutputBufferLength)
 {
     UNREFERENCED_PARAMETER(uInputBufferLength);
@@ -162,16 +172,7 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
                     break;
                 }
 
-                pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
-                pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
-                pOpDescription->uPid       = pIrpOp->m_uPid;
-                pOpDescription->cbData     = pIrpOp->m_cbBuffer;
-
-                memcpy(
-                    pOpDescription->pData,
-                    pIrpOp->m_pBuffer.LetPtr(), 
-                    pIrpOp->m_cbBuffer
-                );
+                FillOperationDescription(pOpDescription, pIrpOp);
 
                 cbData += pOpDescription->PureSize();
                 pOpDescription = pOpDescription->GetNext();
@@ -223,16 +224,15 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
                                                            FltGetRequestorProcessId(pData));
             RETURN_IF_FAILED_ALLOC(pItem);
 
-            size_t cbItemData = pNameInfo->Name.Length + sizeof(WCHAR);
-            CAutoArrayPtr<BYTE> pItemData = new BYTE[cbItemData];
-            RETURN_IF_FAILED_ALLOC(pItem);
-
-            hr = CopyStringW((LPWSTR)pItemData.LetPtr(), pNameInfo->Name.Buffer, cbItemData);
+            hr = FltParseFileNameInformation(pNameInfo.LetPtr());
             RETURN_IF_FAILED(hr);
 
-            pItem->m_pBuffer.Swap(pItemData);
-            pItem->m_cbBuffer = cbItemData;
+            hr = pItem->SetFileName(pNameInfo->Name.Buffer, pNameInfo->Name.Length + sizeof(WCHAR));
+            RETURN_IF_FAILED(hr);
 
+            hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
+            RETURN_IF_FAILED(hr);
+            
             m_aIrpOpsQueue.Push(pItem);
         }
         else

@@ -1,10 +1,11 @@
 #pragma once
 
-
+#include "FSDCommonDefs.h"
 #include "CFilter.h"
 #include "CFSDCommunicationPort.h"
 #include "AutoPtr.h"
 #include "FSDAtomicQueue.h"
+#include "FSDStringUtils.h"
 
 struct IrpOperationItem;
 
@@ -144,6 +145,7 @@ public:
 
 private:
     static bool IsFilenameForScan(UNICODE_STRING);
+    static void FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescription, IrpOperationItem* pIrpOp);
 
 private:
     bool                            m_fClosed;
@@ -163,18 +165,56 @@ struct IrpOperationItem : public SingleListItem
     ULONG               m_uIrpMajorCode;
     ULONG               m_uIrpMinorCode;
     ULONG               m_uPid;
-    size_t              m_cbBuffer;
-    CAutoArrayPtr<BYTE> m_pBuffer;
+    double              m_dWriteEntropy;
+
+    WCHAR               m_wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
+
+    size_t              m_cbFileName;
+    CAutoArrayPtr<BYTE> m_pFileName;
 
     IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid)
         : m_uIrpMajorCode(uIrpMajorCode)
         , m_uIrpMinorCode(uIrpMinorCode)
         , m_uPid(uPid)
-        , m_cbBuffer(0)
+        , m_cbFileName(0)
     {}
+
+    NTSTATUS SetFileName(LPCWSTR wszFileName, size_t cbFileName)
+    {
+        NTSTATUS hr = S_OK;
+
+        CAutoArrayPtr<BYTE> pFileName = new BYTE[cbFileName];
+        RETURN_IF_FAILED_ALLOC(pFileName);
+
+        hr = CopyStringW((LPWSTR)pFileName.LetPtr(), wszFileName, cbFileName);
+        RETURN_IF_FAILED(hr);
+
+        m_pFileName.Swap(pFileName);
+        m_cbFileName = cbFileName;
+
+        return S_OK;
+    }
+
+    NTSTATUS SetFileExtention(LPCWSTR wszFileExtention, size_t cbFileExtention)
+    {
+        NTSTATUS hr = S_OK;
+
+        if (!wszFileExtention)
+        {
+            m_wszFileExtention[0] = 0;
+            return S_OK;
+        }
+
+        ASSERT(cbFileExtention < sizeof(m_wszFileExtention));
+
+        hr = CopyStringW(m_wszFileExtention, wszFileExtention, sizeof(m_wszFileExtention));
+        RETURN_IF_FAILED(hr);
+
+        return S_OK;
+    }
 
     size_t PureSize() const
     {
-        return sizeof(IrpOperationItem) - sizeof(m_pBuffer) + m_cbBuffer;
+        return sizeof(IrpOperationItem) - sizeof(m_pFileName) + m_cbFileName;
     }
 };
