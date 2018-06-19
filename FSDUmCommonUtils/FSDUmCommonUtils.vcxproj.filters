@@ -27,6 +27,9 @@
     <ClCompile Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\FSDCommonUtils\FSDShanonEntropy.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CFSDPortConnector.h">
@@ -45,6 +48,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\FSDCommonUtils\FSDShanonEntropy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

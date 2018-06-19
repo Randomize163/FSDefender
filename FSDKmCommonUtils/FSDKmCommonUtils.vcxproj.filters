@@ -42,7 +42,7 @@
     <ClInclude Include="FSDAtomicQueue.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="FSDShanonEntropy.h">
+    <ClInclude Include="..\FSDCommonUtils\FSDShanonEntropy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -62,7 +62,7 @@
     <ClCompile Include="FSDSynchronizationUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSDShanonEntropy.cpp">
+    <ClCompile Include="..\FSDCommonUtils\FSDShanonEntropy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

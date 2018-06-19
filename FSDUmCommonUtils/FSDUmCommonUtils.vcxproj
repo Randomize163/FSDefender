@@ -151,6 +151,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.cpp" />
+    <ClCompile Include="..\FSDCommonUtils\FSDShanonEntropy.cpp" />
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
     <ClCompile Include="CFSDPortConnector.cpp" />
     <ClCompile Include="FSDThreadUtils.cpp" />
@@ -159,6 +160,7 @@
     <ClInclude Include="..\FSDCommonUtils\AutoPtr.h" />
     <ClInclude Include="..\FSDCommonUtils\CFSDDynamicByteBuffer.h" />
     <ClInclude Include="..\FSDCommonUtils\FSDCommonInclude.h" />
+    <ClInclude Include="..\FSDCommonUtils\FSDShanonEntropy.h" />
     <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h" />
     <ClInclude Include="CFSDPortConnector.h" />
     <ClInclude Include="FSDThreadUtils.h" />
