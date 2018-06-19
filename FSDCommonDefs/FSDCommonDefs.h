@@ -72,6 +72,7 @@ struct FSD_OPERATION_DESCRIPTION
     ULONG          uMajorType;
     ULONG          uMinorType;
     size_t         cbData;
+	bool		   fCheckForDelete;
     BYTE           pData[];
 
     size_t PureSize() const

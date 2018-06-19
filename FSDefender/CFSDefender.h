@@ -171,12 +171,14 @@ struct IrpOperationItem : public SingleListItem
 
     size_t              m_cbFileName;
     CAutoArrayPtr<BYTE> m_pFileName;
+	bool				m_checkForDelete;
 
-    IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid)
+    IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid, bool checkForDelete)
         : m_uIrpMajorCode(uIrpMajorCode)
         , m_uIrpMinorCode(uIrpMinorCode)
         , m_uPid(uPid)
         , m_cbFileName(0)
+		, m_checkForDelete(checkForDelete)
     {}
 
     NTSTATUS SetFileName(LPCWSTR wszFileName, size_t cbFileName)

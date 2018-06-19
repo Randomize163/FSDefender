@@ -100,6 +100,7 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
     pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.LetPtr(), pIrpOp->m_cbFileName);
     pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
     pOpDescription->cbData = pOpDescription->DataPureSize();
+	pOpDescription->fCheckForDelete = pIrpOp->m_checkForDelete;
 }
 
 NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBufferLength, OUT PVOID pvOutputBuffer, IN ULONG uOutputBufferLength, OUT PULONG puReturnOutputBufferLength)
@@ -219,9 +220,24 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
     {
         if (m_fSniffer)
         {
+			bool checkForDelete = false;
+
+			if (pData->Iopb->MajorFunction == IRP_MJ_CREATE && FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DELETE_ON_CLOSE))
+			{
+				checkForDelete = true;
+			}
+
+			if (pData->Iopb->MajorFunction == IRP_MJ_SET_INFORMATION
+				|| pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformation
+				|| pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformationEx)
+			{
+				checkForDelete = true;
+			}
+
             IrpOperationItem* pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
                                                            pData->Iopb->MinorFunction,
-                                                           FltGetRequestorProcessId(pData));
+                                                           FltGetRequestorProcessId(pData),
+														   checkForDelete);
             RETURN_IF_FAILED_ALLOC(pItem);
 
             hr = FltParseFileNameInformation(pNameInfo.LetPtr());
@@ -232,7 +248,7 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
 
             hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
             RETURN_IF_FAILED(hr);
-            
+
             m_aIrpOpsQueue.Push(pItem);
         }
         else
