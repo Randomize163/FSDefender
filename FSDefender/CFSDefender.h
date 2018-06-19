@@ -199,7 +199,7 @@ struct IrpOperationItem : public SingleListItem
     {
         NTSTATUS hr = S_OK;
 
-        if (!wszFileExtention)
+        if (!wszFileExtention || (cbFileExtention >= sizeof(m_wszFileExtention)))
         {
             m_wszFileExtention[0] = 0;
             return S_OK;
