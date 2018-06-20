@@ -166,6 +166,7 @@ struct IrpOperationItem : public SingleListItem
     ULONG               m_uIrpMinorCode;
     ULONG               m_uPid;
     double              m_dWriteEntropy;
+    bool                m_fWriteEntropyCalculated;
 
     WCHAR               m_wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
 

@@ -5,6 +5,7 @@
 #include "FSDRegistrationInfo.h"
 #include "stdio.h"
 #include "FSDStringUtils.h"
+#include "FSDShanonEntropy.h"
 
 extern CFSDefender* g;
 
@@ -101,6 +102,12 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
     pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
     pOpDescription->cbData = pOpDescription->DataPureSize();
 	pOpDescription->fCheckForDelete = pIrpOp->m_checkForDelete;
+    if (pOpDescription->uMajorType == IRP_MJ_WRITE)
+    {   
+        FSD_OPERATION_WRITE* pWrite = pOpDescription->WriteDescription();
+        pWrite->dWriteEntropy           = pIrpOp->m_dWriteEntropy;
+        pWrite->fWriteEntropyCalculated = pIrpOp->m_fWriteEntropyCalculated;      
+    }
 }
 
 NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBufferLength, OUT PVOID pvOutputBuffer, IN ULONG uOutputBufferLength, OUT PULONG puReturnOutputBufferLength)
@@ -249,6 +256,15 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
             hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
             RETURN_IF_FAILED(hr);
 
+            if (pData->Iopb->MajorFunction == IRP_MJ_WRITE)
+            {
+                if (pData->Iopb->Parameters.Write.Length && pData->Iopb->Parameters.Write.WriteBuffer)
+                {
+                    pItem->m_dWriteEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Write.WriteBuffer, pData->Iopb->Parameters.Write.Length);
+                    pItem->m_fWriteEntropyCalculated = true;
+                }
+            }
+            
             m_aIrpOpsQueue.Push(pItem);
         }
         else

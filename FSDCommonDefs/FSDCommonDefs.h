@@ -54,7 +54,9 @@ struct FSD_OPERATION_GENERAL
 
 struct FSD_OPERATION_WRITE
 {
-    ULONG  uWriteEntropy;
+    double dWriteEntropy;
+    bool   fWriteEntropyCalculated;
+
     WCHAR  wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
 
     size_t cbFileName;
@@ -74,6 +76,11 @@ struct FSD_OPERATION_DESCRIPTION
     size_t         cbData;
 	bool		   fCheckForDelete;
     BYTE           pData[];
+
+    FSD_OPERATION_WRITE* WriteDescription()
+    {
+        return (FSD_OPERATION_WRITE*)pData;
+    }
 
     size_t PureSize() const
     {

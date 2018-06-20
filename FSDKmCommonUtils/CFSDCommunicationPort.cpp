@@ -10,8 +10,8 @@ CFSDCommunicationPort::CFSDCommunicationPort()
     , m_pPort(NULL)
     , m_pFilter(NULL)
     , m_pClientPort(NULL)
-{
-}
+{}
+
 NTSTATUS CFSDCommunicationPort::Initialize(
     LPCWSTR                     wszName, 
     PFLT_FILTER                 pFilter, 
