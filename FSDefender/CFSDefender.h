@@ -39,7 +39,9 @@ public:
     );
 
 
-    NTSTATUS ProcessPreIrp(PFLT_CALLBACK_DATA pData);
+    NTSTATUS ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjectsd);
+
+    bool SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects);
 
 public:
     static NTSTATUS OnConnect(PVOID pvContext, PFLT_PORT pClientPort)
@@ -158,6 +160,8 @@ private:
 
     CAtomicQueue<IrpOperationItem>  m_aIrpOpsQueue;
     IrpOperationItem*               m_pItemsReadyForSend;
+
+    ULONG                           m_uManagerPid;
 };
 
 struct IrpOperationItem : public SingleListItem
@@ -174,7 +178,7 @@ struct IrpOperationItem : public SingleListItem
 
     size_t              m_cbFileName;
     CAutoArrayPtr<BYTE> m_pFileName;
-	bool				m_checkForDelete;
+    bool                m_checkForDelete;
 
     IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid, bool checkForDelete)
         : m_uIrpMajorCode(uIrpMajorCode)
@@ -182,7 +186,7 @@ struct IrpOperationItem : public SingleListItem
         , m_uPid(uPid)
         , m_cbFileName(0)
         , m_cbWrite(0)
-		, m_checkForDelete(checkForDelete)
+        , m_checkForDelete(checkForDelete)
     {}
 
     NTSTATUS SetFileName(LPCWSTR wszFileName, size_t cbFileName)

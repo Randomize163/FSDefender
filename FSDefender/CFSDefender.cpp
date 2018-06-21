@@ -1,6 +1,7 @@
 #include "CFSDefender.h"
 
-#include "FSDUtils.h"
+//#include "FSDUtils.h"
+#include "FSDFilterUtils.h"
 #include "FSDCommonDefs.h"
 #include "FSDRegistrationInfo.h"
 #include "stdio.h"
@@ -16,6 +17,7 @@ CFSDefender::CFSDefender()
     , m_fSniffer(false)
     , m_fClosed(false)
     , m_pItemsReadyForSend(NULL)
+    , m_uManagerPid(0)
 {}
 
 CFSDefender::~CFSDefender()
@@ -101,7 +103,7 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
     pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.Get(), pIrpOp->m_cbFileName);
     pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
     pOpDescription->cbData = pOpDescription->DataPureSize();
-	pOpDescription->fCheckForDelete = pIrpOp->m_checkForDelete;
+    pOpDescription->fCheckForDelete = pIrpOp->m_checkForDelete;
     if (pOpDescription->uMajorType == IRP_MJ_WRITE)
     {   
         FSD_OPERATION_WRITE* pWrite = pOpDescription->WriteDescription();
@@ -123,6 +125,11 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
 
     switch (pMessage->aType)
     {
+        case MESSAGE_TYPE_SET_MANAGER_PID:
+        {
+            m_uManagerPid = pMessage->uPid;
+            break;
+        }
         case MESSAGE_TYPE_SET_SCAN_DIRECTORY:
         {
             CAutoStringW wszFileName;
@@ -203,9 +210,69 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
     return S_OK;
 }
 
-NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
+bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects)
+{
+    UNREFERENCED_PARAMETER(pRelatedObjects);
+
+    if (FltGetRequestorProcessId(pData) == m_uManagerPid)
+    {
+        return true;
+    }
+
+    //
+    //  Directory opens don't need to be scanned.
+    //
+
+    /*if (FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DIRECTORY_FILE)) 
+    {
+        return true;
+    }
+
+    //
+    //  Skip pre-rename operations which always open a directory.
+    //
+
+    if (FlagOn(pData->Iopb->OperationFlags, SL_OPEN_TARGET_DIRECTORY)) 
+    {
+        return true;
+    }
+    */
+    //
+    //  Skip paging files.
+    //
+
+    /*if (FlagOn(pData->Iopb->OperationFlags, SL_OPEN_PAGING_FILE)) 
+    {
+        return true;
+    }
+
+    //
+    //  Skip scanning DASD opens 
+    //
+
+    if (FlagOn(pRelatedObjects->FileObject->Flags, FO_VOLUME_OPEN)) 
+    {
+        return true;
+    }
+    */
+    BOOLEAN fIsDir;
+    NTSTATUS hr = FltIsDirectory(pData->Iopb->TargetFileObject, pData->Iopb->TargetInstance, &fIsDir);
+    if (FAILED(hr) || fIsDir)
+    {
+        return true;
+    }
+
+    return false;
+}
+
+NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects)
 {
     NTSTATUS hr = S_OK;
+
+    if (SkipScanning(pData, pRelatedObjects))
+    {
+        return S_OK;
+    }
 
     CAutoNameInformation pNameInfo;
     hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &pNameInfo);
@@ -228,36 +295,53 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
     {
         if (m_fSniffer)
         {
-			bool checkForDelete = false;
+            bool checkForDelete = false;
 
-			if (pData->Iopb->MajorFunction == IRP_MJ_CREATE && FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DELETE_ON_CLOSE))
-			{
-				checkForDelete = true;
-			}
+            if (pData->Iopb->MajorFunction == IRP_MJ_CREATE && FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DELETE_ON_CLOSE))
+            {
+                checkForDelete = true;
+            }
 
-			if (pData->Iopb->MajorFunction == IRP_MJ_SET_INFORMATION
-				|| pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformation
-				|| pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformationEx)
-			{
-				checkForDelete = true;
-			}
+            if (pData->Iopb->MajorFunction == IRP_MJ_SET_INFORMATION
+                || pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformation
+                || pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformationEx)
+            {
+                checkForDelete = true;
+            }
 
             CAutoPtr<IrpOperationItem> pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
-		                                                           	pData->Iopb->MinorFunction,
-		                                                           	FltGetRequestorProcessId(pData));
-		                                                           	FltGetRequestorProcessId(pData),
-																   	checkForDelete);
+                                                                       pData->Iopb->MinorFunction,
+                                                                       FltGetRequestorProcessId(pData),
+                                                                       checkForDelete);
             RETURN_IF_FAILED_ALLOC(pItem);
 
             hr = FltParseFileNameInformation(pNameInfo.Get());
             RETURN_IF_FAILED(hr);
 
-            hr = pItem->SetFileName(pNameInfo->Name.Buffer, pNameInfo->Name.Length + sizeof(WCHAR));
+            LPWSTR wszVolumeName;
+            size_t cbVolumeName;
+            hr = GetVolumeName(&wszVolumeName, &cbVolumeName, pRelatedObjects->Volume);
+            RETURN_IF_FAILED(hr);
+
+            size_t ceVolumeName = cbVolumeName / 2;
+
+            size_t ceFileName = pNameInfo->Name.Length - pNameInfo->Volume.Length + cbVolumeName + 1;
+            size_t cbFileName = ceFileName * sizeof(WCHAR);
+            CAutoStringW wszFileName = new WCHAR[ceFileName];
+            RETURN_IF_FAILED_ALLOC(wszVolumeName);
+
+            hr = CopyStringW(wszFileName.Get(), wszVolumeName, cbFileName);
+            RETURN_IF_FAILED(hr);
+
+            hr = CopyStringW(wszFileName.Get() + ceVolumeName, pNameInfo->Name.Buffer + pNameInfo->Volume.Length/2, cbFileName - cbVolumeName);
+            RETURN_IF_FAILED(hr);
+
+            hr = pItem->SetFileName(wszFileName.Get(), cbFileName);
             RETURN_IF_FAILED(hr);
 
             hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
             RETURN_IF_FAILED(hr);
-
+            
             if (pData->Iopb->MajorFunction == IRP_MJ_WRITE)
             {
                 if (pData->Iopb->Parameters.Write.Length && pData->Iopb->Parameters.Write.WriteBuffer)
@@ -528,12 +612,23 @@ The return value is the status of the operation.
 
     if (FltObjects->FileObject == NULL)
     {
+        return FLT_PREOP_SUCCESS_NO_CALLBACK;
+    }
+
+    if (Data->Iopb->MajorFunction == IRP_MJ_CREATE)
+    {
         return FLT_PREOP_SUCCESS_WITH_CALLBACK;
     }
 
-    (void)g->ProcessPreIrp(Data);   
+    if (Data->Iopb->MajorFunction == IRP_MJ_CLOSE)
+    {
+        TRACE(TL_ERROR, "IRP_MJ_CLOSE\n");
+    }
 
-    return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+    (void)g->ProcessPreIrp(Data, FltObjects);
+
+
+    return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
 
 VOID
@@ -594,40 +689,15 @@ CFSDefender::FSDPostOperation(
     _In_ PCFLT_RELATED_OBJECTS FltObjects,
     _In_opt_ PVOID CompletionContext,
     _In_ FLT_POST_OPERATION_FLAGS Flags
-)
-/*++
-
-Routine Description:
-
-This routine is the post-operation completion routine for this
-miniFilter.
-
-This is non-pageable because it may be called at DPC level.
-
-Arguments:
-
-Data - Pointer to the filter callbackData that is passed to us.
-
-FltObjects - Pointer to the FLT_RELATED_OBJECTS data structure containing
-opaque handles to this filter, instance, its associated volume and
-file object.
-
-CompletionContext - The completion context set in the pre-operation routine.
-
-Flags - Denotes whether the completion is successful or is being drained.
-
-Return Value:
-
-The return value is the status of the operation.
-
---*/
-{
+){
     UNREFERENCED_PARAMETER(Data);
     UNREFERENCED_PARAMETER(FltObjects);
     UNREFERENCED_PARAMETER(CompletionContext);
     UNREFERENCED_PARAMETER(Flags);
 
     TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPostOperation: Entered\n");
+
+    (void)g->ProcessPreIrp(Data, FltObjects);
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }

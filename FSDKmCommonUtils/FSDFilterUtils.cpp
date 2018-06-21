@@ -1,5 +1,6 @@
 #include "FSDFilterUtils.h"
 
+#include "FSDCommonInclude.h"
 #include <fltKernel.h>
 #include <stdio.h>
 #include <ntddk.h>
@@ -491,4 +492,22 @@ PrintIrpCode(
     }
 
     sprintf_s(szIrpCodeString, cbIrpCodeString, "%s %s", irpMajorString, irpMinorString);
+}
+
+NTSTATUS GetVolumeName(LPWSTR* pwszName, size_t* pcbSize, PFLT_VOLUME pVolume)
+{
+    NTSTATUS hr = S_OK;
+
+    PDEVICE_OBJECT pDevObj;
+    hr = FltGetDiskDeviceObject(pVolume, &pDevObj);
+    RETURN_IF_FAILED(hr);
+
+    UNICODE_STRING ustrDosName;
+    hr = RtlVolumeDeviceToDosName(pDevObj, &ustrDosName);
+    RETURN_IF_FAILED(hr);
+
+    *pwszName = ustrDosName.Buffer;
+    *pcbSize  = ustrDosName.Length;
+
+    return S_OK;
 }

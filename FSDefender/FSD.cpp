@@ -17,7 +17,7 @@ Environment:
 #include <fltKernel.h>
 #include <dontuse.h>
 #include <suppress.h>
-#include "FSDUtils.h"
+#include "FSDFilterUtils.h"
 #include "FSDCommonDefs.h"
 #include "AutoPtr.h"
 #include "CFSDefender.h"

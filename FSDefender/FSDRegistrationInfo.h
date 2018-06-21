@@ -97,12 +97,12 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     0,
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
-
+    */
     { IRP_MJ_CLEANUP,
     0,
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
-
+    /*
     { IRP_MJ_CREATE_MAILSLOT,
     0,
     CFSDefender::FSDPreOperation,

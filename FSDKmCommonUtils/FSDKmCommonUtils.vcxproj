@@ -39,9 +39,9 @@
     <ClInclude Include="..\FSDCommonUtils\FSDCommonInclude.h" />
     <ClInclude Include="..\FSDCommonUtils\FSDShanonEntropy.h" />
     <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h" />
-    <ClInclude Include="..\FSDUmCommonUtils\FSDFilterUtils.h" />
     <ClInclude Include="CFSDCommunicationPort.h" />
     <ClInclude Include="FSDAtomicQueue.h" />
+    <ClInclude Include="FSDFilterUtils.h" />
     <ClInclude Include="FSDKmCommonInclude.h" />
     <ClInclude Include="FSDMemoryUtils.h" />
     <ClInclude Include="FSDSynchronizationUtils.h" />
@@ -49,8 +49,8 @@
   <ItemGroup>
     <ClCompile Include="..\FSDCommonUtils\FSDShanonEntropy.cpp" />
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
-    <ClCompile Include="..\FSDUmCommonUtils\FSDFilterUtils.cpp" />
     <ClCompile Include="CFSDCommunicationPort.cpp" />
+    <ClCompile Include="FSDFilterUtils.cpp" />
     <ClCompile Include="FSDMemoryUtils.cpp" />
     <ClCompile Include="FSDSynchronizationUtils.cpp" />
   </ItemGroup>

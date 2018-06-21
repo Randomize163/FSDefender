@@ -15,6 +15,7 @@ enum MESSAGE_TYPE
 {
     MESSAGE_TYPE_SET_SCAN_DIRECTORY,
     MESSAGE_TYPE_PRINT_STRING,
+    MESSAGE_TYPE_SET_MANAGER_PID,
     MESSAGE_TYPE_QUERY_NEW_OPS,
 };
 
@@ -25,6 +26,7 @@ struct FSD_MESSAGE_FORMAT
     {
         WCHAR wszFileName[MAX_FILE_NAME_LENGTH];
         WCHAR wszPrintString[MAX_STRING_LENGTH];
+        ULONG uPid;
     };
 };
 
@@ -36,6 +38,7 @@ enum IRP_MAJOR_TYPE
     IRP_WRITE               = 0x04,
     IRP_QUERY_INFORMATION   = 0x05,
     IRP_SET_INFORMATION     = 0x06,
+    IRP_CLEANUP             = 0x12,
 };
 
 #pragma warning(disable : 4200)  // zero sized array
@@ -75,7 +78,7 @@ struct FSD_OPERATION_DESCRIPTION
     ULONG          uMajorType;
     ULONG          uMinorType;
     size_t         cbData;
-	bool		   fCheckForDelete;
+    bool           fCheckForDelete;
     BYTE           pData[];
 
     FSD_OPERATION_WRITE* WriteDescription()
