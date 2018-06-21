@@ -9,7 +9,7 @@ NTSTATUS NewCopyStringW(LPWSTR* pwszDest, LPCWSTR wszSource, size_t cbSource)
     CAutoStringW wszDest = new WCHAR[cbSource / sizeof(WCHAR)];
     RETURN_IF_FAILED_ALLOC(wszDest);
 
-    INT err = wcscpy_s(wszDest.LetPtr(), cbSource / sizeof(WCHAR), wszSource);
+    INT err = wcscpy_s(wszDest.Get(), cbSource / sizeof(WCHAR), wszSource);
     RETURN_IF_FAILED_ERRNO(err);
 
     wszDest.Detach(pwszDest);

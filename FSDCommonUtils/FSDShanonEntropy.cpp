@@ -1,4 +1,5 @@
 #include "FSDShanonEntropy.h"
+#include "AutoPtr.h"
 #include <math.h>
 
 #define M_LOG2E 1.4426950408889634074 
@@ -11,18 +12,22 @@ static inline double log2(double n)
 double CalculateShannonEntropy(PVOID pvBuffer, size_t cbBuffer)
 {
     ULONG pAlphabet[256] = {};
+    
+    BYTE* pData = (BYTE*)pvBuffer;
 
     size_t cbData = 0;
     for (;;)
     {
-        if (cbData == cbBuffer)
+        if (cbData >= cbBuffer)
         {
+            ASSERT(cbData == cbBuffer);
             break;
         }
-
-        ASSERT(((BYTE*)pvBuffer)[cbData] < 256);
-        pAlphabet[((BYTE*)pvBuffer)[cbData]]++;
-
+       
+        UCHAR uIndex = pData[cbData];
+        ASSERT(uIndex < 256);
+        pAlphabet[uIndex]++;
+        
         cbData++;
     }
 

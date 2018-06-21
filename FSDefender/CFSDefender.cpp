@@ -98,7 +98,7 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
     pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
     pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
     pOpDescription->uPid       = pIrpOp->m_uPid;
-    pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.LetPtr(), pIrpOp->m_cbFileName);
+    pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.Get(), pIrpOp->m_cbFileName);
     pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
     pOpDescription->cbData = pOpDescription->DataPureSize();
 	pOpDescription->fCheckForDelete = pIrpOp->m_checkForDelete;
@@ -241,13 +241,14 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
 				checkForDelete = true;
 			}
 
-            IrpOperationItem* pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
-                                                           pData->Iopb->MinorFunction,
-                                                           FltGetRequestorProcessId(pData),
-														   checkForDelete);
+            CAutoPtr<IrpOperationItem> pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
+		                                                           	pData->Iopb->MinorFunction,
+		                                                           	FltGetRequestorProcessId(pData));
+		                                                           	FltGetRequestorProcessId(pData),
+																   	checkForDelete);
             RETURN_IF_FAILED_ALLOC(pItem);
 
-            hr = FltParseFileNameInformation(pNameInfo.LetPtr());
+            hr = FltParseFileNameInformation(pNameInfo.Get());
             RETURN_IF_FAILED(hr);
 
             hr = pItem->SetFileName(pNameInfo->Name.Buffer, pNameInfo->Name.Length + sizeof(WCHAR));
@@ -265,7 +266,7 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
                 }
             }
             
-            m_aIrpOpsQueue.Push(pItem);
+            m_aIrpOpsQueue.Push(pItem.LetPtr());
         }
         else
         {

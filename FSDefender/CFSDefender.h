@@ -23,7 +23,7 @@ public:
 
     LPCWSTR GetScanDirectoryName() const
     {
-        return m_wszScanPath.LetPtr();
+        return m_wszScanPath.Get();
     }
 
     NTSTATUS ConnectClient(PFLT_PORT pClientPort);
@@ -189,7 +189,7 @@ struct IrpOperationItem : public SingleListItem
         CAutoArrayPtr<BYTE> pFileName = new BYTE[cbFileName];
         RETURN_IF_FAILED_ALLOC(pFileName);
 
-        hr = CopyStringW((LPWSTR)pFileName.LetPtr(), wszFileName, cbFileName);
+        hr = CopyStringW((LPWSTR)pFileName.Get(), wszFileName, cbFileName);
         RETURN_IF_FAILED(hr);
 
         m_pFileName.Swap(pFileName);

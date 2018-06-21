@@ -25,7 +25,7 @@ NTSTATUS CFSDDynamicByteBuffer::Reserve(size_t cbReservation)
 
     m_cbReservedSize += cbReservation;
 
-    memcpy(pNewBuffer.LetPtr(), m_pBuffer.LetPtr(), m_cbEffectiveSize);
+    memcpy(pNewBuffer.Get(), m_pBuffer.Get(), m_cbEffectiveSize);
 
     pNewBuffer.Swap(m_pBuffer);
 
@@ -54,7 +54,7 @@ NTSTATUS CFSDDynamicByteBuffer::Append(BYTE* pbData, size_t cbData)
     
     ASSERT(cbData <= GetSpareSize());
 
-    memcpy(m_pBuffer.LetPtr() + m_cbEffectiveSize, pbData, cbData);
+    memcpy(m_pBuffer.Get() + m_cbEffectiveSize, pbData, cbData);
 
     m_cbEffectiveSize += cbData;
 

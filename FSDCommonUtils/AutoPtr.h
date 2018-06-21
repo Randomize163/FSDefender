@@ -43,7 +43,7 @@ public:
         m_p = tmp;
     }
 
-    T* LetPtr() const
+    T* Get() const
     {
         return m_p;
     }
@@ -58,6 +58,14 @@ public:
         Release();
 
         return &m_p;
+    }
+
+    T* LetPtr()
+    {
+        T* p = m_p;
+        m_p = NULL;
+
+        return p;
     }
 
 public:

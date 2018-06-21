@@ -22,7 +22,7 @@ public:
 
     BYTE* Get()
     {
-        return m_pBuffer.LetPtr();
+        return m_pBuffer.Get();
     }
 
     size_t GetSpareSize() const
