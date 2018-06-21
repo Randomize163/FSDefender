@@ -54,6 +54,7 @@ struct FSD_OPERATION_GENERAL
 
 struct FSD_OPERATION_WRITE
 {
+    size_t cbWrite;
     double dWriteEntropy;
     bool   fWriteEntropyCalculated;
 

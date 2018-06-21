@@ -165,6 +165,8 @@ struct IrpOperationItem : public SingleListItem
     ULONG               m_uIrpMajorCode;
     ULONG               m_uIrpMinorCode;
     ULONG               m_uPid;
+
+    size_t              m_cbWrite;
     double              m_dWriteEntropy;
     bool                m_fWriteEntropyCalculated;
 
@@ -179,6 +181,7 @@ struct IrpOperationItem : public SingleListItem
         , m_uIrpMinorCode(uIrpMinorCode)
         , m_uPid(uPid)
         , m_cbFileName(0)
+        , m_cbWrite(0)
 		, m_checkForDelete(checkForDelete)
     {}
 

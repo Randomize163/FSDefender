@@ -106,7 +106,8 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
     {   
         FSD_OPERATION_WRITE* pWrite = pOpDescription->WriteDescription();
         pWrite->dWriteEntropy           = pIrpOp->m_dWriteEntropy;
-        pWrite->fWriteEntropyCalculated = pIrpOp->m_fWriteEntropyCalculated;      
+        pWrite->fWriteEntropyCalculated = pIrpOp->m_fWriteEntropyCalculated; 
+        pWrite->cbWrite                 = pIrpOp->m_cbWrite;
     }
 }
 
@@ -263,6 +264,7 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData)
                 {
                     pItem->m_dWriteEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Write.WriteBuffer, pData->Iopb->Parameters.Write.Length);
                     pItem->m_fWriteEntropyCalculated = true;
+                    pItem->m_cbWrite = pData->Iopb->Parameters.Write.Length;
                 }
             }
             
