@@ -155,6 +155,7 @@
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
     <ClCompile Include="CFSDPortConnector.cpp" />
     <ClCompile Include="FSDThreadUtils.cpp" />
+    <ClCompile Include="FSDUmFileUtils.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\FSDCommonUtils\AutoPtr.h" />
@@ -164,6 +165,7 @@
     <ClInclude Include="..\FSDCommonUtils\FSDStringUtils.h" />
     <ClInclude Include="CFSDPortConnector.h" />
     <ClInclude Include="FSDThreadUtils.h" />
+    <ClInclude Include="FSDUmFileUtils.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

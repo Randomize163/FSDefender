@@ -68,6 +68,11 @@ public:
         return p;
     }
 
+    bool operator==(T* p) const
+    {
+        return p == m_p;
+    }
+
 public:
     T * m_p;
 };
@@ -170,6 +175,11 @@ public:
             CloseHandle(this->m_p);
             this->m_p = NULL;
         }
+    }
+
+    operator HANDLE()
+    {
+        return m_p;
     }
 };
 

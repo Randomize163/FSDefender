@@ -24,16 +24,16 @@ LZJD::~LZJD() {
 }
 
 
-std::vector<int32_t> getAllHashes(std::vector<char>& bytes)
+std::vector<int32_t> getAllHashes(char* pBuffer, size_t cbBuffer)
 {
     std::vector<int32_t> ints;
 
     std::unordered_set<int32_t> x_set;
     MurmurHash3 running_hash = MurmurHash3();
 
-    for(char b : bytes) 
+    for(size_t cbIndex = 0; cbIndex < cbBuffer; cbIndex++) 
     {
-        int8_t some_byte = b; //wherever you want to get this
+        int8_t some_byte = pBuffer[cbIndex]; //wherever you want to get this
         int32_t hash = running_hash.pushByte(some_byte);
 
         if (x_set.insert(hash).second)
@@ -48,9 +48,9 @@ std::vector<int32_t> getAllHashes(std::vector<char>& bytes)
     return ints;
 }
 
-std::vector<int32_t> digest(uint64_t k, std::vector<char>& bytes)
+std::vector<int32_t> digest(uint64_t k, char* pBuffer, size_t cbBuffer)
 {
-    std::vector<int32_t> ints = getAllHashes(bytes);
+    std::vector<int32_t> ints = getAllHashes(pBuffer, cbBuffer);
 
     if(ints.size() > k)
     {
