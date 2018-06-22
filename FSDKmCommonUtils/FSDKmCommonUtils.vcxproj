@@ -43,6 +43,7 @@
     <ClInclude Include="FSDAtomicQueue.h" />
     <ClInclude Include="FSDFilterUtils.h" />
     <ClInclude Include="FSDKmCommonInclude.h" />
+    <ClInclude Include="FSDKmFileUtils.h" />
     <ClInclude Include="FSDMemoryUtils.h" />
     <ClInclude Include="FSDSynchronizationUtils.h" />
   </ItemGroup>
@@ -51,6 +52,7 @@
     <ClCompile Include="..\FSDCommonUtils\FSDStringUtils.cpp" />
     <ClCompile Include="CFSDCommunicationPort.cpp" />
     <ClCompile Include="FSDFilterUtils.cpp" />
+    <ClCompile Include="FSDKmFileUtils.cpp" />
     <ClCompile Include="FSDMemoryUtils.cpp" />
     <ClCompile Include="FSDSynchronizationUtils.cpp" />
   </ItemGroup>

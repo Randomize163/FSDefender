@@ -1,8 +1,6 @@
 #ifndef _MURMURHASH3_H__
 #define _MURMURHASH3_H__
 
-#include <iostream>
-#include <string>
 #include <cstdint>
 
 

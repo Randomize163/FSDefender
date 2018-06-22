@@ -328,7 +328,7 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
             size_t ceFileName = pNameInfo->Name.Length - pNameInfo->Volume.Length + cbVolumeName + 1;
             size_t cbFileName = ceFileName * sizeof(WCHAR);
             CAutoStringW wszFileName = new WCHAR[ceFileName];
-            RETURN_IF_FAILED_ALLOC(wszVolumeName);
+            RETURN_IF_FAILED_ALLOC(wszFileName);
 
             hr = CopyStringW(wszFileName.Get(), wszVolumeName, cbFileName);
             RETURN_IF_FAILED(hr);
@@ -622,7 +622,7 @@ The return value is the status of the operation.
 
     if (Data->Iopb->MajorFunction == IRP_MJ_CLOSE)
     {
-        TRACE(TL_ERROR, "IRP_MJ_CLOSE\n");
+        //TRACE(TL_ERROR, "IRP_MJ_CLOSE\n");
     }
 
     (void)g->ProcessPreIrp(Data, FltObjects);

@@ -45,6 +45,9 @@
     <ClInclude Include="FSDFilterUtils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FSDKmFileUtils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CFSDCommunicationPort.cpp">
@@ -63,6 +66,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FSDFilterUtils.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="FSDKmFileUtils.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
