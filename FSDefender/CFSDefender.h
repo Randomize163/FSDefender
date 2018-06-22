@@ -178,15 +178,18 @@ struct IrpOperationItem : public SingleListItem
 
     size_t              m_cbFileName;
     CAutoArrayPtr<BYTE> m_pFileName;
+    CAutoArrayPtr<BYTE> m_pFileRenameInfo;
+    size_t              m_cbFileRenameInfo;
     bool                m_checkForDelete;
 
-    IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid, bool checkForDelete)
+    IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid)
         : m_uIrpMajorCode(uIrpMajorCode)
         , m_uIrpMinorCode(uIrpMinorCode)
         , m_uPid(uPid)
         , m_cbFileName(0)
         , m_cbWrite(0)
-        , m_checkForDelete(checkForDelete)
+        , m_cbFileRenameInfo(0)
+        , m_checkForDelete(false)
     {}
 
     NTSTATUS SetFileName(LPCWSTR wszFileName, size_t cbFileName)
@@ -219,6 +222,22 @@ struct IrpOperationItem : public SingleListItem
 
         hr = CopyStringW(m_wszFileExtention, wszFileExtention, sizeof(m_wszFileExtention));
         RETURN_IF_FAILED(hr);
+
+        return S_OK;
+    }
+
+    NTSTATUS SetFileRenameInfo(LPCWSTR wszFileRename, size_t cbFileRename)
+    {
+        NTSTATUS hr = S_OK;
+
+        CAutoArrayPtr<BYTE> pFileName = new BYTE[cbFileRename];
+        RETURN_IF_FAILED_ALLOC(pFileName);
+
+        hr = CopyStringW((LPWSTR)pFileName.Get(), wszFileRename, cbFileRename);
+        RETURN_IF_FAILED(hr);
+
+        m_pFileRenameInfo.Swap(pFileName);
+        m_cbFileRenameInfo = cbFileRename;
 
         return S_OK;
     }

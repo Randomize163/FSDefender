@@ -26,6 +26,7 @@
 #define RETURN_IF_FAILED_ALLOC(ptr) { if(!ptr) return STATUS_NO_MEMORY;}
 #define RETURN_IF_FAILED_ERRNO(err) { if (err != 0) return E_FAIL;}
 #define CATCH_ALL_AND_RETURN_FAILED_HR catch(...) { return E_FAIL;}
+#define BREAK_IF_FAILED(hr) { if(FAILED(hr)) break; }
 
 #define VOID_IF_FAILED(hr) { if(FAILED(hr)) return; }
 #define VOID_IF_FAILED_ALLOC(ptr) { if(!ptr) return; }

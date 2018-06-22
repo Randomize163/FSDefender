@@ -295,25 +295,56 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
     {
         if (m_fSniffer)
         {
-            bool checkForDelete = false;
+            CAutoPtr<IrpOperationItem> pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
+                                                                       pData->Iopb->MinorFunction,
+                                                                       FltGetRequestorProcessId(pData));
+            RETURN_IF_FAILED_ALLOC(pItem);
 
             if (pData->Iopb->MajorFunction == IRP_MJ_CREATE && FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DELETE_ON_CLOSE))
             {
-                checkForDelete = true;
+                pItem->m_checkForDelete = true;
             }
 
-            if (pData->Iopb->MajorFunction == IRP_MJ_SET_INFORMATION
-                || pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformation
-                || pData->Iopb->Parameters.SetFileInformation.FileInformationClass == FileDispositionInformationEx)
+            if (pData->Iopb->MajorFunction == IRP_MJ_SET_INFORMATION)
             {
-                checkForDelete = true;
-            }
+                switch (pData->Iopb->Parameters.SetFileInformation.FileInformationClass)
+                {
+                case FileDispositionInformation:
+                case FileDispositionInformationEx:
+                {
+                    pItem->m_checkForDelete = true;
+                    break;
+                }
 
-            CAutoPtr<IrpOperationItem> pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
-                                                                       pData->Iopb->MinorFunction,
-                                                                       FltGetRequestorProcessId(pData),
-                                                                       checkForDelete);
-            RETURN_IF_FAILED_ALLOC(pItem);
+                case FileRenameInformation:
+                case FileRenameInformationEx:
+                {
+                    PFILE_RENAME_INFORMATION renameInfo = (PFILE_RENAME_INFORMATION)pData->Iopb->Parameters.SetFileInformation.InfoBuffer;
+                    CAutoNameInformation pNewNameInfo;
+
+                    hr = FltGetDestinationFileNameInformation(pRelatedObjects->Instance,
+                                                    pRelatedObjects->FileObject,
+                                                    renameInfo->RootDirectory,
+                                                    renameInfo->FileName,
+                                                    renameInfo->FileNameLength,
+                                                    FLT_FILE_NAME_REQUEST_FROM_CURRENT_PROVIDER | FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_DEFAULT,
+                                                    &pNewNameInfo);
+                    BREAK_IF_FAILED(hr);
+
+                    hr = FltParseFileNameInformation(pNewNameInfo.Get());
+                    BREAK_IF_FAILED(hr);
+
+                    hr = pItem->SetFileRenameInfo(pNewNameInfo->Name.Buffer, pNewNameInfo->Name.Length);
+                    BREAK_IF_FAILED(hr);
+
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
+                }
+            }
 
             hr = FltParseFileNameInformation(pNameInfo.Get());
             RETURN_IF_FAILED(hr);
