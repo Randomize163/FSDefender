@@ -72,6 +72,42 @@ struct FSD_OPERATION_WRITE
     }
 };
 
+struct FSD_OPERATION_SET_INFORMATION
+{
+    size_t cbInitialFileName;
+    size_t cbNewFileName;
+
+    // Begins with null terminated Initaial File Name and then null terminated New File Name 
+    BYTE   pFileNames[]; 
+
+    size_t PureSize() const
+    {
+        return sizeof(FSD_OPERATION_WRITE) + cbInitialFileName + cbNewFileName;
+    }
+
+    LPWSTR GetInitialFileName()
+    {
+        return (LPWSTR)pFileNames;
+    }
+
+    LPWSTR GetNewFileName()
+    {
+        return (LPWSTR)(pFileNames + cbInitialFileName);
+    }
+
+    void SetInitialFileName(LPCWSTR wszFileName, size_t cbFileName)
+    {
+        memcpy(GetInitialFileName(), wszFileName, cbFileName);
+        cbInitialFileName = cbFileName;
+    }
+
+    void SetNewFileName(LPCWSTR wszFileName, size_t cbFileName)
+    {
+        memcpy(GetNewFileName(), wszFileName, cbFileName);
+        cbNewFileName = cbFileName;
+    }
+};
+
 struct FSD_OPERATION_DESCRIPTION
 {
     ULONG          uPid;
@@ -84,6 +120,11 @@ struct FSD_OPERATION_DESCRIPTION
     FSD_OPERATION_WRITE* WriteDescription()
     {
         return (FSD_OPERATION_WRITE*)pData;
+    }
+
+    FSD_OPERATION_SET_INFORMATION* SetInformationDescription()
+    {
+        return (FSD_OPERATION_SET_INFORMATION*)pData;
     }
 
     size_t PureSize() const
@@ -110,12 +151,21 @@ struct FSD_OPERATION_DESCRIPTION
     {
         memcpy(GetFileName(), wszFileName, cbFileName);
         
-        if (uMajorType == IRP_WRITE)
+        switch (uMajorType)
         {
-            ((FSD_OPERATION_WRITE*)pData)->cbFileName = cbFileName;
+            case IRP_WRITE:
+            {
+                ((FSD_OPERATION_WRITE*)pData)->cbFileName = cbFileName;
+            }
+            case IRP_SET_INFORMATION:
+            {
+                ((FSD_OPERATION_SET_INFORMATION*)pData)->cbInitialFileName = cbFileName;
+            }
+            default:
+            {
+                ((FSD_OPERATION_GENERAL*)pData)->cbFileName = cbFileName;
+            }
         }
-
-        ((FSD_OPERATION_GENERAL*)pData)->cbFileName = cbFileName;
     }
 
     LPWSTR GetFileExtention()
@@ -130,12 +180,19 @@ struct FSD_OPERATION_DESCRIPTION
 
     LPWSTR GetFileName()
     {
-        if (uMajorType == IRP_WRITE)
+        switch (uMajorType)
+        {
+        case IRP_WRITE:
         {
             return (LPWSTR)((FSD_OPERATION_WRITE*)pData)->pFileName;
         }
-
-        return (LPWSTR)((FSD_OPERATION_GENERAL*)pData)->pFileName;
+        case IRP_SET_INFORMATION:
+        {
+            return ((FSD_OPERATION_SET_INFORMATION*)pData)->GetInitialFileName();
+        }
+        default:
+            return (LPWSTR)((FSD_OPERATION_GENERAL*)pData)->pFileName;
+        }
     }
 
     FSD_OPERATION_DESCRIPTION* GetNext()
