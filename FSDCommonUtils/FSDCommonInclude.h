@@ -23,6 +23,13 @@
 #endif
 
 #define RETURN_IF_FAILED(hr) { if(FAILED(hr)) return hr; }
+
+#ifdef _KERNEL_MODE  
+#define RETURN_IF_FAILED_EX(hr) { if(FAILED(hr)) {TRACE(TL_ERROR, "%s:%d FAILED with status 0x%x", __FILE__, __LINE__, hr); return hr;} }
+#else
+#define RETURN_IF_FAILED_EX(hr) { if(FAILED(hr)) {printf("%s:%d FAILED with status 0x%x", __FILE__, __LINE__, hr); return hr;} }
+#endif
+
 #define RETURN_IF_FAILED_ALLOC(ptr) { if(!ptr) return STATUS_NO_MEMORY;}
 #define RETURN_IF_FAILED_ERRNO(err) { if (err != 0) return E_FAIL;}
 #define CATCH_ALL_AND_RETURN_FAILED_HR catch(...) { return E_FAIL;}

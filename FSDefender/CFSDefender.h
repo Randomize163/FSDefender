@@ -41,7 +41,7 @@ public:
 
     NTSTATUS ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjectsd);
 
-    bool SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects);
+    bool SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PFLT_FILE_NAME_INFORMATION pNameInfo);
 
 public:
     static NTSTATUS OnConnect(PVOID pvContext, PFLT_PORT pClientPort)
@@ -170,9 +170,9 @@ struct IrpOperationItem : public SingleListItem
     ULONG               m_uIrpMinorCode;
     ULONG               m_uPid;
 
-    size_t              m_cbWrite;
-    double              m_dWriteEntropy;
-    bool                m_fWriteEntropyCalculated;
+    size_t              m_cbData;
+    double              m_dDataEntropy;
+    bool                m_fDataEntropyCalculated;
 
     WCHAR               m_wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
 
@@ -180,16 +180,16 @@ struct IrpOperationItem : public SingleListItem
     CAutoArrayPtr<BYTE> m_pFileName;
     CAutoArrayPtr<BYTE> m_pFileRenameInfo;
     size_t              m_cbFileRenameInfo;
-    bool                m_checkForDelete;
+    bool                m_fCheckForDelete;
 
     IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid)
         : m_uIrpMajorCode(uIrpMajorCode)
         , m_uIrpMinorCode(uIrpMinorCode)
         , m_uPid(uPid)
         , m_cbFileName(0)
-        , m_cbWrite(0)
+        , m_cbData(0)
         , m_cbFileRenameInfo(0)
-        , m_checkForDelete(false)
+        , m_fCheckForDelete(false)
     {}
 
     NTSTATUS SetFileName(LPCWSTR wszFileName, size_t cbFileName)

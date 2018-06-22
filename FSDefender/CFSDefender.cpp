@@ -97,19 +97,46 @@ void CFSDefender::DisconnectClient(PFLT_PORT pClientPort)
 
 void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescription, IrpOperationItem* pIrpOp)
 {
+    //
+    // Set general information
+    //
     pOpDescription->uMajorType = pIrpOp->m_uIrpMajorCode;
     pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
     pOpDescription->uPid       = pIrpOp->m_uPid;
     pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.Get(), pIrpOp->m_cbFileName);
     pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
-    pOpDescription->cbData = pOpDescription->DataPureSize();
-    pOpDescription->fCheckForDelete = pIrpOp->m_checkForDelete;
-    if (pOpDescription->uMajorType == IRP_MJ_WRITE)
-    {   
-        FSD_OPERATION_WRITE* pWrite = pOpDescription->WriteDescription();
-        pWrite->dWriteEntropy           = pIrpOp->m_dWriteEntropy;
-        pWrite->fWriteEntropyCalculated = pIrpOp->m_fWriteEntropyCalculated; 
-        pWrite->cbWrite                 = pIrpOp->m_cbWrite;
+    pOpDescription->fCheckForDelete = pIrpOp->m_fCheckForDelete;
+
+    //
+    // Set special information
+    //
+    switch (pOpDescription->uMajorType)
+    {
+        case IRP_MJ_WRITE:
+        {
+            FSD_OPERATION_WRITE* pWrite = pOpDescription->WriteDescription();
+            pWrite->dWriteEntropy = pIrpOp->m_dDataEntropy;
+            pWrite->fWriteEntropyCalculated = pIrpOp->m_fDataEntropyCalculated;
+            pWrite->cbWrite = pIrpOp->m_cbData;
+
+            break;
+        }
+
+        case IRP_MJ_READ:
+        {
+            FSD_OPERATION_READ* pRead = pOpDescription->ReadDescription();
+            pRead->dReadEntropy = pIrpOp->m_dDataEntropy;
+            pRead->fReadEntropyCalculated = pIrpOp->m_fDataEntropyCalculated;
+            pRead->cbRead = pIrpOp->m_cbData;
+        }
+
+        case IRP_MJ_SET_INFORMATION:
+        {
+            FSD_OPERATION_SET_INFORMATION* pSetInfo = pOpDescription->SetInformationDescription();
+            pSetInfo->SetNewFileName((LPCWSTR)pIrpOp->m_pFileRenameInfo.Get(), pIrpOp->m_cbFileRenameInfo);
+
+            break;
+        }
     }
 }
 
@@ -210,7 +237,7 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
     return S_OK;
 }
 
-bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects)
+bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PFLT_FILE_NAME_INFORMATION pNameInfo)
 {
     UNREFERENCED_PARAMETER(pRelatedObjects);
 
@@ -223,7 +250,7 @@ bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS p
     //  Directory opens don't need to be scanned.
     //
 
-    /*if (FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DIRECTORY_FILE)) 
+    if (FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DIRECTORY_FILE)) 
     {
         return true;
     }
@@ -236,12 +263,12 @@ bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS p
     {
         return true;
     }
-    */
+    
     //
     //  Skip paging files.
     //
 
-    /*if (FlagOn(pData->Iopb->OperationFlags, SL_OPEN_PAGING_FILE)) 
+    if (FlagOn(pData->Iopb->OperationFlags, SL_OPEN_PAGING_FILE)) 
     {
         return true;
     }
@@ -254,10 +281,18 @@ bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS p
     {
         return true;
     }
-    */
+    
     BOOLEAN fIsDir;
     NTSTATUS hr = FltIsDirectory(pData->Iopb->TargetFileObject, pData->Iopb->TargetInstance, &fIsDir);
     if (FAILED(hr) || fIsDir)
+    {
+        return true;
+    }
+
+    if (pData->Iopb->MajorFunction != IRP_MJ_WRITE &&
+        pData->Iopb->MajorFunction != IRP_MJ_SET_INFORMATION && 
+        pData->Iopb->MajorFunction != IRP_MJ_READ &&
+        !IsFilenameForScan(pNameInfo->Name))
     {
         return true;
     }
@@ -269,131 +304,167 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
 {
     NTSTATUS hr = S_OK;
 
-    if (SkipScanning(pData, pRelatedObjects))
+    CAutoNameInformation pNameInfo;
+    hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &pNameInfo);
+    RETURN_IF_FAILED(hr);
+
+    if (SkipScanning(pData, pRelatedObjects, pNameInfo.Get()))
     {
         return S_OK;
     }
 
-    CAutoNameInformation pNameInfo;
-    hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &pNameInfo);
-    if (hr == STATUS_FLT_NAME_CACHE_MISS)
+    if (m_fSniffer)
     {
-        hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_FILESYSTEM_ONLY, &pNameInfo);
-        if (FAILED(hr))
-        {
-            //TRACE(TL_VERBOSE, "FSD!FSDPreOperation: FltGetFileNameInformation Failed, status=%08x\n", hr);
-            return FLT_PREOP_SUCCESS_WITH_CALLBACK;
-        }
-    }
-    if (FAILED(hr))
-    {
-        //TRACE(TL_VERBOSE, "FSD!FSDPreOperation: FltGetFileNameInformation Failed, status=%08x\n", hr);
-        return FLT_PREOP_SUCCESS_WITH_CALLBACK;
-    }
+        CAutoPtr<IrpOperationItem> pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
+                                                                    pData->Iopb->MinorFunction,
+                                                                    FltGetRequestorProcessId(pData));
+        RETURN_IF_FAILED_ALLOC(pItem);
 
-    if (IsFilenameForScan(pNameInfo->Name))
-    {
-        if (m_fSniffer)
-        {
-            CAutoPtr<IrpOperationItem> pItem = new IrpOperationItem(pData->Iopb->MajorFunction, 
-                                                                       pData->Iopb->MinorFunction,
-                                                                       FltGetRequestorProcessId(pData));
-            RETURN_IF_FAILED_ALLOC(pItem);
-
-            if (pData->Iopb->MajorFunction == IRP_MJ_CREATE && FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DELETE_ON_CLOSE))
+        //
+        // Special handling of IRPs
+        //
+        switch (pData->Iopb->MajorFunction)
+        { 
+            case IRP_MJ_CREATE:
             {
-                pItem->m_checkForDelete = true;
-            }
-
-            if (pData->Iopb->MajorFunction == IRP_MJ_SET_INFORMATION)
-            {
-                switch (pData->Iopb->Parameters.SetFileInformation.FileInformationClass)
+                if (FlagOn(pData->Iopb->Parameters.Create.Options, FILE_DELETE_ON_CLOSE))
                 {
-                case FileDispositionInformation:
-                case FileDispositionInformationEx:
-                {
-                    pItem->m_checkForDelete = true;
-                    break;
+                    pItem->m_fCheckForDelete = true;
                 }
+                break;
+            }  
 
-                case FileRenameInformation:
-                case FileRenameInformationEx:
-                {
-                    PFILE_RENAME_INFORMATION renameInfo = (PFILE_RENAME_INFORMATION)pData->Iopb->Parameters.SetFileInformation.InfoBuffer;
-                    CAutoNameInformation pNewNameInfo;
-
-                    hr = FltGetDestinationFileNameInformation(pRelatedObjects->Instance,
-                                                    pRelatedObjects->FileObject,
-                                                    renameInfo->RootDirectory,
-                                                    renameInfo->FileName,
-                                                    renameInfo->FileNameLength,
-                                                    FLT_FILE_NAME_REQUEST_FROM_CURRENT_PROVIDER | FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_DEFAULT,
-                                                    &pNewNameInfo);
-                    BREAK_IF_FAILED(hr);
-
-                    hr = FltParseFileNameInformation(pNewNameInfo.Get());
-                    BREAK_IF_FAILED(hr);
-
-                    hr = pItem->SetFileRenameInfo(pNewNameInfo->Name.Buffer, pNewNameInfo->Name.Length);
-                    BREAK_IF_FAILED(hr);
-
-                    break;
-                }
-                default:
-                {
-                    break;
-                }
-                }
-            }
-
-            hr = FltParseFileNameInformation(pNameInfo.Get());
-            RETURN_IF_FAILED(hr);
-
-            LPWSTR wszVolumeName;
-            size_t cbVolumeName;
-            hr = GetVolumeName(&wszVolumeName, &cbVolumeName, pRelatedObjects->Volume);
-            RETURN_IF_FAILED(hr);
-
-            size_t ceVolumeName = cbVolumeName / 2;
-
-            size_t ceFileName = pNameInfo->Name.Length - pNameInfo->Volume.Length + cbVolumeName + 1;
-            size_t cbFileName = ceFileName * sizeof(WCHAR);
-            CAutoStringW wszFileName = new WCHAR[ceFileName];
-            RETURN_IF_FAILED_ALLOC(wszFileName);
-
-            hr = CopyStringW(wszFileName.Get(), wszVolumeName, cbFileName);
-            RETURN_IF_FAILED(hr);
-
-            hr = CopyStringW(wszFileName.Get() + ceVolumeName, pNameInfo->Name.Buffer + pNameInfo->Volume.Length/2, cbFileName - cbVolumeName);
-            RETURN_IF_FAILED(hr);
-
-            hr = pItem->SetFileName(wszFileName.Get(), cbFileName);
-            RETURN_IF_FAILED(hr);
-
-            hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
-            RETURN_IF_FAILED(hr);
-            
-            if (pData->Iopb->MajorFunction == IRP_MJ_WRITE)
+            case IRP_MJ_WRITE:
             {
                 if (pData->Iopb->Parameters.Write.Length && pData->Iopb->Parameters.Write.WriteBuffer)
                 {
-                    pItem->m_dWriteEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Write.WriteBuffer, pData->Iopb->Parameters.Write.Length);
-                    pItem->m_fWriteEntropyCalculated = true;
-                    pItem->m_cbWrite = pData->Iopb->Parameters.Write.Length;
+                    pItem->m_dDataEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Write.WriteBuffer, pData->Iopb->Parameters.Write.Length);
+                    pItem->m_cbData = pData->Iopb->Parameters.Write.Length;
+                    pItem->m_fDataEntropyCalculated = true;
                 }
-            }
-            
-            m_aIrpOpsQueue.Push(pItem.LetPtr());
-        }
-        else
-        {
-            CHAR szIrpCode[MAX_STRING_LENGTH] = {};
-            PrintIrpCode(pData->Iopb->MajorFunction, pData->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
+                else                
+                if (pData->Iopb->Parameters.Write.Length && pData->Iopb->Parameters.Write.MdlAddress != NULL)
+                {
+                    // TODO: Understand why and how to read from mdl
+                    ASSERT(false);
+                }
 
-            TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", 
-                FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
+                break;
+            }
+
+            case IRP_MJ_READ:
+            {
+                if (pData->Iopb->Parameters.Read.Length && pData->Iopb->Parameters.Read.ReadBuffer)
+                {
+                    pItem->m_dDataEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Read.ReadBuffer, pData->Iopb->Parameters.Read.Length);
+                    pItem->m_cbData = pData->Iopb->Parameters.Read.Length;
+                    pItem->m_fDataEntropyCalculated = true;
+                }
+                else 
+                if (pData->Iopb->Parameters.Read.Length && pData->Iopb->Parameters.Read.MdlAddress != NULL)
+                {
+                    // TODO: Understand why and how to read from mdl
+                    ASSERT(false);
+                }
+
+                break;
+            }
+
+            case IRP_MJ_SET_INFORMATION:
+            {
+                switch (pData->Iopb->Parameters.SetFileInformation.FileInformationClass)
+                {
+                    case FileDispositionInformation:
+                    case FileDispositionInformationEx:
+                    {
+                        pItem->m_fCheckForDelete = true;
+                        break;
+                    }
+
+                    case FileRenameInformation:
+                    case FileRenameInformationEx:
+                    {
+                        PFILE_RENAME_INFORMATION pRenameInfo = (PFILE_RENAME_INFORMATION)pData->Iopb->Parameters.SetFileInformation.InfoBuffer;
+                        
+                        CAutoNameInformation pNewNameInfo;
+                        hr = FltGetDestinationFileNameInformation(
+                            pRelatedObjects->Instance,
+                            pRelatedObjects->FileObject,
+                            pRenameInfo->RootDirectory,
+                            pRenameInfo->FileName,
+                            pRenameInfo->FileNameLength,
+                            FLT_FILE_NAME_REQUEST_FROM_CURRENT_PROVIDER | FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_DEFAULT,
+                            &pNewNameInfo);
+                        BREAK_IF_FAILED(hr);
+
+                        // Filter only renames that are related to our folder
+                        if (!IsFilenameForScan(pNameInfo->Name) && !IsFilenameForScan(pNewNameInfo->Name))
+                        {
+                            return S_OK;
+                        }
+
+                        hr = FltParseFileNameInformation(pNewNameInfo.Get());
+                        BREAK_IF_FAILED(hr);
+
+                        hr = pItem->SetFileRenameInfo(pNewNameInfo->Name.Buffer, pNewNameInfo->Name.Length);
+                        BREAK_IF_FAILED(hr);
+
+                        break;
+                    }
+
+                    default:
+                    {
+                        break;
+                    }
+                }
+
+                break;
+            }
+
+            default:
+            {
+                break;
+            }
         }
+
+        hr = FltParseFileNameInformation(pNameInfo.Get());
+        RETURN_IF_FAILED(hr);
+
+        LPWSTR wszVolumeName;
+        size_t cbVolumeName;
+        hr = GetVolumeName(&wszVolumeName, &cbVolumeName, pRelatedObjects->Volume);
+        RETURN_IF_FAILED(hr);
+
+        size_t ceVolumeName = cbVolumeName / 2;
+
+        size_t ceFileName = pNameInfo->Name.Length - pNameInfo->Volume.Length + cbVolumeName + 1;
+        size_t cbFileName = ceFileName * sizeof(WCHAR);
+        CAutoStringW wszFileName = new WCHAR[ceFileName];
+        RETURN_IF_FAILED_ALLOC(wszFileName);
+
+        hr = CopyStringW(wszFileName.Get(), wszVolumeName, cbFileName);
+        RETURN_IF_FAILED(hr);
+
+        hr = CopyStringW(wszFileName.Get() + ceVolumeName, pNameInfo->Name.Buffer + pNameInfo->Volume.Length/2, cbFileName - cbVolumeName);
+        RETURN_IF_FAILED(hr);
+
+        hr = pItem->SetFileName(wszFileName.Get(), cbFileName);
+        RETURN_IF_FAILED(hr);
+
+        hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
+        RETURN_IF_FAILED(hr);
+            
+        m_aIrpOpsQueue.Push(pItem.LetPtr());
     }
+    else
+    {
+        CHAR szIrpCode[MAX_STRING_LENGTH] = {};
+        PrintIrpCode(pData->Iopb->MajorFunction, pData->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
+
+        TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", 
+            FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
+    }
+    
 
     return S_OK;
 }
@@ -646,18 +717,13 @@ The return value is the status of the operation.
         return FLT_PREOP_SUCCESS_NO_CALLBACK;
     }
 
-    if (Data->Iopb->MajorFunction == IRP_MJ_CREATE)
+    // Create and Read will be processed at PostOperation
+    if (Data->Iopb->MajorFunction == IRP_MJ_CREATE || Data->Iopb->MajorFunction == IRP_MJ_READ)
     {
         return FLT_PREOP_SUCCESS_WITH_CALLBACK;
     }
 
-    if (Data->Iopb->MajorFunction == IRP_MJ_CLOSE)
-    {
-        //TRACE(TL_ERROR, "IRP_MJ_CLOSE\n");
-    }
-
     (void)g->ProcessPreIrp(Data, FltObjects);
-
 
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
