@@ -44,8 +44,6 @@ enum IRP_MAJOR_TYPE
 #pragma warning(disable : 4200)  // zero sized array
 struct FSD_OPERATION_GENERAL
 {
-    WCHAR  wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
-
     size_t cbFileName;
     BYTE   pFileName[];
 
@@ -61,8 +59,6 @@ struct FSD_OPERATION_WRITE
     double dWriteEntropy;
     bool   fWriteEntropyCalculated;
 
-    WCHAR  wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
-
     size_t cbFileName;
     BYTE   pFileName[];
 
@@ -77,8 +73,6 @@ struct FSD_OPERATION_READ
     size_t cbRead;
     double dReadEntropy;
     bool   fReadEntropyCalculated;
-
-    WCHAR  wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
 
     size_t cbFileName;
     BYTE   pFileName[];
@@ -179,11 +173,6 @@ struct FSD_OPERATION_DESCRIPTION
         }
     }
 
-    void SetFileExtention(LPCWSTR wszFileExtention, size_t cbFileExtention)
-    {
-        memcpy(GetFileExtention(), wszFileExtention, cbFileExtention);
-    }
-
     void SetFileName(LPCWSTR wszFileName, size_t cbFileName)
     {
         memcpy(GetFileName(), wszFileName, cbFileName);
@@ -210,16 +199,6 @@ struct FSD_OPERATION_DESCRIPTION
                 ((FSD_OPERATION_GENERAL*)pData)->cbFileName = cbFileName;
             }
         }
-    }
-
-    LPWSTR GetFileExtention()
-    {
-        if (uMajorType == IRP_WRITE)
-        {
-            return ((FSD_OPERATION_WRITE*)pData)->wszFileExtention;
-        }
-
-        return ((FSD_OPERATION_GENERAL*)pData)->wszFileExtention;
     }
 
     LPWSTR GetFileName()
