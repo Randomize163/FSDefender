@@ -174,12 +174,12 @@ struct IrpOperationItem : public SingleListItem
     double              m_dDataEntropy;
     bool                m_fDataEntropyCalculated;
 
+    WCHAR               m_wszFileExtention[MAX_FILE_EXTENTION_LENGTH];
+
     size_t              m_cbFileName;
     CAutoArrayPtr<BYTE> m_pFileName;
-
-    size_t              m_cbFileRenameInfo;
     CAutoArrayPtr<BYTE> m_pFileRenameInfo;
-    
+    size_t              m_cbFileRenameInfo;
     bool                m_fCheckForDelete;
 
     IrpOperationItem(ULONG uIrpMajorCode, ULONG uIrpMinorCode, ULONG uPid)
@@ -208,6 +208,24 @@ struct IrpOperationItem : public SingleListItem
         return S_OK;
     }
 
+    NTSTATUS SetFileExtention(LPCWSTR wszFileExtention, size_t cbFileExtention)
+    {
+        NTSTATUS hr = S_OK;
+
+        if (!wszFileExtention || (cbFileExtention >= sizeof(m_wszFileExtention)))
+        {
+            m_wszFileExtention[0] = 0;
+            return S_OK;
+        }
+
+        ASSERT(cbFileExtention < sizeof(m_wszFileExtention));
+
+        hr = CopyStringW(m_wszFileExtention, wszFileExtention, sizeof(m_wszFileExtention));
+        RETURN_IF_FAILED(hr);
+
+        return S_OK;
+    }
+
     NTSTATUS SetFileRenameInfo(LPCWSTR wszFileRename, size_t cbFileRename)
     {
         NTSTATUS hr = S_OK;
@@ -226,6 +244,6 @@ struct IrpOperationItem : public SingleListItem
 
     size_t PureSize() const
     {
-        return sizeof(IrpOperationItem) - sizeof(m_pFileName) + m_cbFileName - sizeof(m_pFileRenameInfo) + m_cbFileRenameInfo;
+        return sizeof(IrpOperationItem) - sizeof(m_pFileName) + m_cbFileName;
     }
 };

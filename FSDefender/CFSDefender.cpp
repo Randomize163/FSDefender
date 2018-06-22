@@ -104,6 +104,7 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
     pOpDescription->uMinorType = pIrpOp->m_uIrpMinorCode;
     pOpDescription->uPid       = pIrpOp->m_uPid;
     pOpDescription->SetFileName((LPCWSTR)pIrpOp->m_pFileName.Get(), pIrpOp->m_cbFileName);
+    pOpDescription->SetFileExtention(pIrpOp->m_wszFileExtention, sizeof(pIrpOp->m_wszFileExtention));
     pOpDescription->fCheckForDelete = pIrpOp->m_fCheckForDelete;
 
     //
@@ -450,6 +451,9 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
         hr = pItem->SetFileName(wszFileName.Get(), cbFileName);
         RETURN_IF_FAILED(hr);
 
+        hr = pItem->SetFileExtention(pNameInfo->Extension.Buffer, pNameInfo->Extension.Length + sizeof(WCHAR));
+        RETURN_IF_FAILED(hr);
+            
         m_aIrpOpsQueue.Push(pItem.LetPtr());
     }
     else
