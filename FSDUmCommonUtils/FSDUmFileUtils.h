@@ -4,6 +4,8 @@
 #include "AutoPtr.h"
 #include "FSDStringUtils.h"
 
+#define INVALID_HANDLE_VALUE ((HANDLE)(LONG_PTR)-1)
+
 class CAutoFile
 {
 public:
@@ -20,25 +22,31 @@ public:
         hr = NewCopyStringW(&m_wszName, wszFileName, cbFileName);
         RETURN_IF_FAILED(hr);
 
-        HANDLE hFile = CreateFileW(m_wszName.Get(), dwAccess, dwShareMode, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, NULL);
-        if (hFile == INVALID_HANDLE_VALUE)
+        m_hFile = CreateFileW(m_wszName.Get(), dwAccess, dwShareMode, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, NULL);
+        if (m_hFile == INVALID_HANDLE_VALUE)
         {
             return HRESULT_FROM_WIN32(GetLastError());
         }
-
-        m_hFile = hFile;
 
         return S_OK;
     }
 
     HRESULT Read(LPVOID pvBuffer, size_t* pcbBuffer)
     {
+        HRESULT hr = S_OK;
+
         DWORD cbReadSize;
         bool fRead = ReadFile(m_hFile, pvBuffer, numeric_cast<DWORD>(*pcbBuffer), &cbReadSize, NULL);
         if (!fRead)
         {
             *pcbBuffer = 0;
-            return HRESULT_FROM_WIN32(GetLastError());
+            hr = HRESULT_FROM_WIN32(GetLastError());
+            if (hr == E_HANDLE)
+            {
+                m_hFile = INVALID_HANDLE_VALUE;
+                ASSERT(m_hFile == INVALID_HANDLE_VALUE);
+            }
+            RETURN_IF_FAILED(hr);
         }
 
         *pcbBuffer = cbReadSize;
@@ -75,23 +83,9 @@ public:
         return S_OK;
     }
 
-    ~CAutoFile()
-    {
-        HANDLE hHandle = m_hFile;
-        if (m_hFile != INVALID_HANDLE_VALUE && m_hFile != NULL)
-        {
-            CloseHandle(m_hFile);
-        }
-        
-        if (hHandle)
-        {
-
-        }
-    }
-
 private:
     CAutoStringW m_wszName;
-    HANDLE       m_hFile;
+    CAutoHandle  m_hFile;
 };
 
 LPCWSTR GetFileExtentionFromFileName(LPWSTR wszFileName);

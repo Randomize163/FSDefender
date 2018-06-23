@@ -152,6 +152,8 @@ public:
 typedef CAutoArrayPtr<WCHAR> CAutoStringW;
 typedef CAutoArrayPtr<CHAR>  CAutoStringA;
 
+#define INVALID_HANDLE_VALUE ((HANDLE)(LONG_PTR)-1)
+
 class CAutoHandle : public CAuto<void>
 {
 public:
@@ -170,11 +172,12 @@ public:
 
     virtual void Release() override
     {
-        if (this->m_p)
+        if (this->m_p != NULL && m_p != INVALID_HANDLE_VALUE)
         {
             CloseHandle(this->m_p);
-            this->m_p = NULL;
         }
+
+        this->m_p = NULL;
     }
 
     operator HANDLE()

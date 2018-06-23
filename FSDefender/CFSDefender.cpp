@@ -282,13 +282,6 @@ bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS p
         return true;
     }
     
-    BOOLEAN fIsDir;
-    NTSTATUS hr = FltIsDirectory(pData->Iopb->TargetFileObject, pData->Iopb->TargetInstance, &fIsDir);
-    if (FAILED(hr) || fIsDir)
-    {
-        return true;
-    }
-
     return false;
 }
 
@@ -313,6 +306,13 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
         pData->Iopb->MajorFunction != IRP_MJ_SET_INFORMATION &&
         pData->Iopb->MajorFunction != IRP_MJ_READ &&
         !IsFilenameForScan(pNameInfo->Name))
+    {
+        return S_NO_CALLBACK;
+    }
+
+    BOOLEAN fIsDir;
+    hr = FltIsDirectory(pData->Iopb->TargetFileObject, pData->Iopb->TargetInstance, &fIsDir);
+    if (FAILED(hr) || fIsDir)
     {
         return S_NO_CALLBACK;
     }

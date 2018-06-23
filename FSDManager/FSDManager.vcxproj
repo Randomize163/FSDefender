@@ -150,6 +150,7 @@
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <AdditionalIncludeDirectories>$(SolutionDir)\LZJDistance;$(SolutionDir)\FSDUmCommonUtils;$(SolutionDir)\FSDCommonDefs;$(SolutionDir)\FSDCommonUtils;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;FSDUmCommonUtils.lib;Shlwapi.lib;LZJDistance.lib;</AdditionalDependencies>
