@@ -340,19 +340,44 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
 
             case IRP_MJ_WRITE:
             {
-                if (pData->Iopb->Parameters.Write.Length && pData->Iopb->Parameters.Write.WriteBuffer)
+                if (pData->Iopb->Parameters.Write.Length == 0)
+                {
+                    return FLT_PREOP_SUCCESS_NO_CALLBACK;
+                }
+
+                PVOID pvWriteBuffer = NULL;
+                if (pData->Iopb->Parameters.Write.MdlAddress != NULL) 
+                {
+                    ASSERT(((PMDL)pData->Iopb->Parameters.Write.MdlAddress)->Next == NULL);
+
+                    pvWriteBuffer = MmGetSystemAddressForMdlSafe(pData->Iopb->Parameters.Write.MdlAddress, NormalPagePriority | MdlMappingNoExecute);
+                    if (!pvWriteBuffer)
+                    {
+                        pData->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
+                        pData->IoStatus.Information = 0;
+                        return FLT_PREOP_COMPLETE;
+                    }
+                }
+                else
+                {
+                    pvWriteBuffer = pData->Iopb->Parameters.Write.WriteBuffer;
+                }
+
+                ASSERT(pvWriteBuffer != NULL);
+
+                __try
                 {
                     pItem->m_dDataEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Write.WriteBuffer, pData->Iopb->Parameters.Write.Length);
                     pItem->m_cbData = pData->Iopb->Parameters.Write.Length;
                     pItem->m_fDataEntropyCalculated = true;
                 }
-                else                
-                if (pData->Iopb->Parameters.Write.Length && pData->Iopb->Parameters.Write.MdlAddress != NULL)
+                __except (EXCEPTION_EXECUTE_HANDLER)
                 {
-                    // TODO: Understand why and how to read from mdl
-                    ASSERT(false);
+                    pData->IoStatus.Status = GetExceptionCode();
+                    pData->IoStatus.Information = 0;
+                    return FLT_PREOP_COMPLETE;
                 }
-
+                
                 break;
             }
 

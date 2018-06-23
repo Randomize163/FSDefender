@@ -77,9 +77,15 @@ public:
 
     ~CAutoFile()
     {
-        if (m_hFile != INVALID_HANDLE_VALUE)
+        HANDLE hHandle = m_hFile;
+        if (m_hFile != INVALID_HANDLE_VALUE && m_hFile != NULL)
         {
             CloseHandle(m_hFile);
+        }
+        
+        if (hHandle)
+        {
+
         }
     }
 

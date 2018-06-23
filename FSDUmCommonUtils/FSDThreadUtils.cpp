@@ -42,29 +42,6 @@ LPWSTR GetFileNameFromPath(LPWSTR wszPath)
     return pLastBackslash;
 }
 
-LPCWSTR GetFileExtentionFromFileName(LPWSTR wszFileName)
-{
-    LPWSTR pLastPoint = NULL;
-
-    size_t cSymbol = 0;
-    for (;;)
-    {
-        if (wszFileName[cSymbol] == L'\0')
-        {
-            break;
-        }
-
-        if (wszFileName[cSymbol] == L'.')
-        {
-            pLastPoint = wszFileName + cSymbol;
-        }
-
-        cSymbol++;
-    }
-
-    return pLastPoint;
-}
-
 void GetProcessNameByPid(ULONG uPid, LPWSTR wszName, size_t ceSymbols)
 {
     CAutoHandle hProcess = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, uPid);
