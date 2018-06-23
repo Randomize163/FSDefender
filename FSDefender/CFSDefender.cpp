@@ -372,12 +372,31 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
                 switch (pData->Iopb->Parameters.SetFileInformation.FileInformationClass)
                 {
                     case FileDispositionInformation:
+                    {
+                        PFILE_DISPOSITION_INFORMATION pInfo = (PFILE_DISPOSITION_INFORMATION)pData->Iopb->Parameters.SetFileInformation.InfoBuffer;
+                        if (pInfo->DeleteFile)
+                        {
+                            pItem->m_fCheckForDelete = true;
+                        }
+                        break;
+                    }
+                    case FileDispositionInformationEx:
+                    {
+                        PFILE_DISPOSITION_INFORMATION_EX pInfo = (PFILE_DISPOSITION_INFORMATION_EX)pData->Iopb->Parameters.SetFileInformation.InfoBuffer;
+                        if (pInfo->Flags & FILE_DISPOSITION_DELETE)
+                        {
+                            pItem->m_fCheckForDelete = true;
+                        }
+                        break;
+                    }
+                    /*
+                    case FileDispositionInformation:
                     case FileDispositionInformationEx:
                     {
                         pItem->m_fCheckForDelete = true;
                         break;
                     }
-
+                    */
                     case FileRenameInformation:
                     case FileRenameInformationEx:
                     {
