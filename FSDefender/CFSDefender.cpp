@@ -127,6 +127,7 @@ void CFSDefender::FillOperationDescription(FSD_OPERATION_DESCRIPTION* pOpDescrip
             pRead->dReadEntropy = pIrpOp->m_dDataEntropy;
             pRead->fReadEntropyCalculated = pIrpOp->m_fDataEntropyCalculated;
             pRead->cbRead = pIrpOp->m_cbData;
+            break;
         }
 
         case IRP_MJ_SET_INFORMATION:
@@ -236,7 +237,7 @@ NTSTATUS CFSDefender::HandleNewMessage(IN PVOID pvInputBuffer, IN ULONG uInputBu
     return S_OK;
 }
 
-bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PFLT_FILE_NAME_INFORMATION pNameInfo)
+bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects)
 {
     UNREFERENCED_PARAMETER(pRelatedObjects);
 
@@ -288,28 +289,36 @@ bool CFSDefender::SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS p
         return true;
     }
 
-    if (pData->Iopb->MajorFunction != IRP_MJ_WRITE &&
-        pData->Iopb->MajorFunction != IRP_MJ_SET_INFORMATION && 
-        pData->Iopb->MajorFunction != IRP_MJ_READ &&
-        !IsFilenameForScan(pNameInfo->Name))
-    {
-        return true;
-    }
-
     return false;
 }
 
-NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects)
+NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PVOID* ppCompletionCtx)
 {
-    NTSTATUS hr = S_OK;
+    NTSTATUS hr = S_NO_CALLBACK;
+
+    if (SkipScanning(pData, pRelatedObjects))
+    {
+        return S_NO_CALLBACK;
+    }
 
     CAutoNameInformation pNameInfo;
     hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &pNameInfo);
-    RETURN_IF_FAILED(hr);
-
-    if (SkipScanning(pData, pRelatedObjects, pNameInfo.Get()))
+    if (pData->Iopb->MajorFunction == IRP_MJ_READ && FAILED(hr))
     {
-        return S_OK;
+        TRACE(TL_ERROR, "FltGetFileNameInformation FAILED for Read. Status: 0x%x Irql: %u\n", hr, KeGetCurrentIrql());
+    }
+    RETURN_IF_FAILED(hr);
+    if (pData->Iopb->MajorFunction == IRP_MJ_READ)
+    {
+        TRACE(TL_ERROR, "FltGetFileNameInformation successeded for Read!\n");
+    }
+
+    if (pData->Iopb->MajorFunction != IRP_MJ_WRITE &&
+        pData->Iopb->MajorFunction != IRP_MJ_SET_INFORMATION &&
+        pData->Iopb->MajorFunction != IRP_MJ_READ &&
+        !IsFilenameForScan(pNameInfo->Name))
+    {
+        return S_NO_CALLBACK;
     }
 
     if (m_fSniffer)
@@ -353,22 +362,15 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
 
             case IRP_MJ_READ:
             {
-                if (pData->Iopb->Parameters.Read.Length && pData->Iopb->Parameters.Read.ReadBuffer)
+                // Preoperation callback
+                if (pData->Iopb->Parameters.Read.Length == 0)
                 {
-                    pItem->m_dDataEntropy = CalculateShannonEntropy(pData->Iopb->Parameters.Read.ReadBuffer, pData->Iopb->Parameters.Read.Length);
-                    pItem->m_cbData = pData->Iopb->Parameters.Read.Length;
-                    pItem->m_fDataEntropyCalculated = true;
-                }
-                else 
-                if (pData->Iopb->Parameters.Read.Length && pData->Iopb->Parameters.Read.MdlAddress != NULL)
-                {
-                    // TODO: Understand why and how to read from mdl
-                    ASSERT(false);
+                    return FLT_PREOP_SUCCESS_NO_CALLBACK;
                 }
 
                 break;
             }
-
+                  
             case IRP_MJ_SET_INFORMATION:
             {
                 switch (pData->Iopb->Parameters.SetFileInformation.FileInformationClass)
@@ -394,26 +396,26 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
                             pRenameInfo->FileNameLength,
                             FLT_FILE_NAME_REQUEST_FROM_CURRENT_PROVIDER | FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_DEFAULT,
                             &pNewNameInfo);
-                        BREAK_IF_FAILED(hr);
+                        RETURN_IF_FAILED_EX(hr);
 
                         // Filter only renames that are related to our folder
                         if (!IsFilenameForScan(pNameInfo->Name) && !IsFilenameForScan(pNewNameInfo->Name))
                         {
-                            return S_OK;
+                            return S_NO_CALLBACK;
                         }
 
                         hr = FltParseFileNameInformation(pNewNameInfo.Get());
-                        BREAK_IF_FAILED(hr);
+                        RETURN_IF_FAILED_EX(hr); 
 
                         hr = pItem->SetFileRenameInfo(pNewNameInfo->Name.Buffer, pNewNameInfo->Name.Length);
-                        BREAK_IF_FAILED(hr);
+                        RETURN_IF_FAILED_EX(hr); 
 
                         break;
                     }
 
                     default:
                     {
-                        break;
+                        return S_NO_CALLBACK;
                     }
                 }
 
@@ -450,6 +452,12 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
         hr = pItem->SetFileName(wszFileName.Get(), cbFileName);
         RETURN_IF_FAILED(hr);
 
+        if (pData->Iopb->MajorFunction == IRP_MJ_READ)
+        {
+            *ppCompletionCtx = pItem.LetPtr();
+            return S_WITH_CALLBACK;
+        }
+
         m_aIrpOpsQueue.Push(pItem.LetPtr());
     }
     else
@@ -460,9 +468,8 @@ NTSTATUS CFSDefender::ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJE
         TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", 
             FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
     }
-    
-
-    return S_OK;
+   
+    return S_NO_CALLBACK;
 }
 
 NTSTATUS
@@ -714,13 +721,17 @@ The return value is the status of the operation.
     }
 
     // Create and Read will be processed at PostOperation
-    if (Data->Iopb->MajorFunction == IRP_MJ_CREATE || Data->Iopb->MajorFunction == IRP_MJ_READ)
+    if (Data->Iopb->MajorFunction == IRP_MJ_CREATE)
     {
         return FLT_PREOP_SUCCESS_WITH_CALLBACK;
     }
 
-    (void)g->ProcessPreIrp(Data, FltObjects);
-
+    hr = g->ProcessIrp(Data, FltObjects, CompletionContext);
+    if (hr == FLT_PREOP_SUCCESS_WITH_CALLBACK)
+    {
+        return FLT_PREOP_SUCCESS_WITH_CALLBACK;
+    }
+   
     return FLT_PREOP_SUCCESS_NO_CALLBACK;
 }
 
@@ -790,7 +801,125 @@ CFSDefender::FSDPostOperation(
 
     TRACE(TL_FUNCTION_ENTRY, "FSD!FSDPostOperation: Entered\n");
 
-    (void)g->ProcessPreIrp(Data, FltObjects);
+    if (Data->Iopb->MajorFunction == IRP_MJ_READ)
+    {
+        if (CompletionContext == NULL)
+        {
+            TRACE(TL_ERROR, "Context is NULL in post operation\n");
+            return FLT_POSTOP_FINISHED_PROCESSING;
+        }
+        (void)g->ProcessReadPostIrp(Data, FltObjects, CompletionContext, Flags);
+
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
+    (void)g->ProcessIrp(Data, FltObjects, NULL);
+
+    return FLT_POSTOP_FINISHED_PROCESSING;
+}
+
+NTSTATUS CFSDefender::ProcessReadPostIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PVOID pCompletionCtx, FLT_POST_OPERATION_FLAGS Flags)
+{
+    //NTSTATUS hr = S_OK;
+
+    CAutoPtr<IrpOperationItem> pItem = (IrpOperationItem*)pCompletionCtx;
+
+    if (FAILED(pData->IoStatus.Status) || pData->IoStatus.Information == 0)
+    {
+        return S_OK;
+    }
+
+    PVOID pvReadBuffer = NULL;
+    if (pData->Iopb->Parameters.Read.MdlAddress != NULL)
+    {
+        ASSERT(((PMDL)pData->Iopb->Parameters.Read.MdlAddress)->Next == NULL);
+
+        pvReadBuffer = MmGetSystemAddressForMdlSafe(pData->Iopb->Parameters.Read.MdlAddress, NormalPagePriority | MdlMappingNoExecute);
+        if (!pvReadBuffer)
+        {
+            pData->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
+            pData->IoStatus.Information = 0;
+
+            return FLT_POSTOP_FINISHED_PROCESSING;
+        }
+    }
+    else
+    if (FlagOn(pData->Flags, FLTFL_CALLBACK_DATA_SYSTEM_BUFFER) || FlagOn(pData->Flags, FLTFL_CALLBACK_DATA_FAST_IO_OPERATION))
+    {
+        pvReadBuffer = pData->Iopb->Parameters.Read.ReadBuffer;
+    }
+    else
+    {
+        FLT_POSTOP_CALLBACK_STATUS status;
+        bool fSuccess = FltDoCompletionProcessingWhenSafe(pData, pRelatedObjects, pCompletionCtx, Flags, FSDReadPostReadBuffersWhenSafe, &status);
+        if (fSuccess)
+        {
+            pItem.LetPtr();
+            return status;
+        }
+        else
+        {
+            pData->IoStatus.Status = STATUS_UNSUCCESSFUL;
+            pData->IoStatus.Information = 0;
+
+            return status;
+        }
+    }
+
+    __try 
+    {
+        pItem->m_dDataEntropy = CalculateShannonEntropy(pvReadBuffer, pData->IoStatus.Information);
+        pItem->m_cbData = pData->IoStatus.Information;
+        pItem->m_fDataEntropyCalculated = true;
+
+        g->m_aIrpOpsQueue.Push(pItem.LetPtr());
+
+    } 
+    __except(EXCEPTION_EXECUTE_HANDLER)
+    {
+        pData->IoStatus.Status = GetExceptionCode();
+        pData->IoStatus.Information = 0;
+    }
+
+    return S_OK;
+}
+
+FLT_POSTOP_CALLBACK_STATUS CFSDefender::FSDReadPostReadBuffersWhenSafe(
+    PFLT_CALLBACK_DATA          pData,
+    PCFLT_RELATED_OBJECTS       pFltObjects,
+    PVOID                       pCompletionCtx,
+    FLT_POST_OPERATION_FLAGS    Flags
+){
+    UNREFERENCED_PARAMETER(pFltObjects);
+    UNREFERENCED_PARAMETER(Flags);
+
+    NTSTATUS hr = FLT_POSTOP_FINISHED_PROCESSING;
+
+    CAutoPtr<IrpOperationItem> pItem = (IrpOperationItem*)pCompletionCtx;
+
+    hr = FltLockUserBuffer(pData);
+    if (FAILED(hr))
+    {
+        pData->IoStatus.Status = hr;
+        pData->IoStatus.Information = 0;
+
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
+    PVOID pvReadBuffer = MmGetSystemAddressForMdlSafe(pData->Iopb->Parameters.Read.MdlAddress, NormalPagePriority | MdlMappingNoExecute);
+    if (!pvReadBuffer) 
+    {
+        pData->IoStatus.Status = STATUS_INSUFFICIENT_RESOURCES;
+        pData->IoStatus.Information = 0;
+
+        return FLT_POSTOP_FINISHED_PROCESSING;
+    }
+
+    pItem->m_dDataEntropy = CalculateShannonEntropy(pvReadBuffer, pData->IoStatus.Information);
+    pItem->m_cbData = pData->IoStatus.Information;
+    pItem->m_fDataEntropyCalculated = true;
+    
+    g->m_aIrpOpsQueue.Push(pItem.LetPtr());
 
     return FLT_POSTOP_FINISHED_PROCESSING;
 }

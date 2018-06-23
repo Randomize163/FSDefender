@@ -39,9 +39,11 @@ public:
     );
 
 
-    NTSTATUS ProcessPreIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjectsd);
+    NTSTATUS ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjectsd, PVOID* ppCompletionCtx);
 
-    bool SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PFLT_FILE_NAME_INFORMATION pNameInfo);
+    NTSTATUS ProcessReadPostIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects, PVOID pCompletionCtx, FLT_POST_OPERATION_FLAGS Flags);
+
+    bool SkipScanning(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS pRelatedObjects);
 
 public:
     static NTSTATUS OnConnect(PVOID pvContext, PFLT_PORT pClientPort)
@@ -133,6 +135,14 @@ public:
         _In_ FLT_POST_OPERATION_FLAGS Flags
     );
 
+    static FLT_POSTOP_CALLBACK_STATUS
+    FSDReadPostReadBuffersWhenSafe(
+        PFLT_CALLBACK_DATA          pData,
+        PCFLT_RELATED_OBJECTS       pFltObjects,
+        PVOID                       pCompletionContext,
+        FLT_POST_OPERATION_FLAGS    Flags
+    );
+
     static FLT_PREOP_CALLBACK_STATUS
     FSDPreOperationNoPostOperation(
         _Inout_ PFLT_CALLBACK_DATA Data,
@@ -144,6 +154,13 @@ public:
     FSDDoRequestOperationStatus(
         _In_ PFLT_CALLBACK_DATA Data
     );
+
+    struct FSDReadPre2PostContext
+    {
+        CAutoPtr<IrpOperationItem> pItem;
+        bool fPreOperation;
+    };
+
 
 private:
     static bool IsFilenameForScan(UNICODE_STRING);

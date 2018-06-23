@@ -104,6 +104,8 @@ LPCWSTR GetFileExtentionFromFileName(LPWSTR wszFileName)
         {
             pLastPoint = wszFileName + cSymbol;
         }
+
+        cSymbol++;
     }
 
     return pLastPoint;

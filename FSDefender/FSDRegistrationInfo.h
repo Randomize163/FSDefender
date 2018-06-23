@@ -28,10 +28,10 @@ CONST FLT_OPERATION_REGISTRATION Callbacks[] = {
     CFSDefender::FSDPreOperation,
     CFSDefender::FSDPostOperation },
 
-    { IRP_MJ_QUERY_INFORMATION,
+   /*{ IRP_MJ_QUERY_INFORMATION,
     0,
     CFSDefender::FSDPreOperation,
-    CFSDefender::FSDPostOperation },
+    CFSDefender::FSDPostOperation },*/
 
     { IRP_MJ_SET_INFORMATION,
     0,

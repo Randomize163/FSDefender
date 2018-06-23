@@ -9,6 +9,8 @@
     #define E_FAIL  STATUS_INTERNAL_ERROR
     #define HRESULT NTSTATUS
     #define BYTE char
+    #define S_NO_CALLBACK FLT_PREOP_SUCCESS_NO_CALLBACK 
+    #define S_WITH_CALLBACK FLT_PREOP_SUCCESS_WITH_CALLBACK 
 #else
     #include <windows.h>
     #include <fltUser.h>
