@@ -507,7 +507,7 @@ NTSTATUS GetVolumeName(LPWSTR* pwszName, size_t* pcbSize, PFLT_VOLUME pVolume)
     RETURN_IF_FAILED(hr);
 
     *pwszName = ustrDosName.Buffer;
-    *pcbSize  = ustrDosName.Length;
+    *pcbSize  = ustrDosName.Length + sizeof(WCHAR);
 
     return S_OK;
 }

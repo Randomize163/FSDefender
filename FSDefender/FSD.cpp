@@ -24,7 +24,7 @@ Environment:
 
 #pragma prefast(disable:__WARNING_ENCODE_MEMBER_FUNCTION_POINTER, "Not valid for kernel mode drivers")
 
-ULONG gTraceFlags = 15;
+ULONG gTraceFlags = 7;
 
 CFSDefender* g;
 

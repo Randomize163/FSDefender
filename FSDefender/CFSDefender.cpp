@@ -305,13 +305,9 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
     hr = FltGetFileNameInformation(pData, FLT_FILE_NAME_OPENED | FLT_FILE_NAME_QUERY_ALWAYS_ALLOW_CACHE_LOOKUP, &pNameInfo);
     if (pData->Iopb->MajorFunction == IRP_MJ_READ && FAILED(hr))
     {
-        TRACE(TL_ERROR, "FltGetFileNameInformation FAILED for Read. Status: 0x%x Irql: %u\n", hr, KeGetCurrentIrql());
+        TRACE(TL_VERBOSE, "FltGetFileNameInformation FAILED for Read. Status: 0x%x Irql: %u\n", hr, KeGetCurrentIrql());
     }
     RETURN_IF_FAILED(hr);
-    if (pData->Iopb->MajorFunction == IRP_MJ_READ)
-    {
-        TRACE(TL_ERROR, "FltGetFileNameInformation successeded for Read!\n");
-    }
 
     if (pData->Iopb->MajorFunction != IRP_MJ_WRITE &&
         pData->Iopb->MajorFunction != IRP_MJ_SET_INFORMATION &&
@@ -407,7 +403,24 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
                         hr = FltParseFileNameInformation(pNewNameInfo.Get());
                         RETURN_IF_FAILED_EX(hr); 
 
-                        hr = pItem->SetFileRenameInfo(pNewNameInfo->Name.Buffer, pNewNameInfo->Name.Length);
+                        LPWSTR wszVolumeName;
+                        size_t cbVolumeName;
+                        hr = GetVolumeName(&wszVolumeName, &cbVolumeName, pRelatedObjects->Volume);
+                        RETURN_IF_FAILED(hr);
+
+                        size_t ceVolumeName = cbVolumeName / 2;
+                        size_t ceFileName = pNewNameInfo->Name.Length - pNewNameInfo->Volume.Length + cbVolumeName + 1;
+                        size_t cbFileName = ceFileName * sizeof(WCHAR);
+                        CAutoStringW wszFileName = new WCHAR[ceFileName];
+                        RETURN_IF_FAILED_ALLOC(wszFileName);
+
+                        hr = CopyStringW(wszFileName.Get(), wszVolumeName, cbFileName);
+                        RETURN_IF_FAILED_EX(hr);
+
+                        hr = CopyStringW(wszFileName.Get() + ceVolumeName, pNewNameInfo->Name.Buffer + pNewNameInfo->Volume.Length / 2, cbFileName - cbVolumeName);
+                        RETURN_IF_FAILED_EX(hr);
+
+                        hr = pItem->SetFileRenameInfo(pNewNameInfo->Name.Buffer, pNewNameInfo->Name.Length + sizeof(WCHAR));
                         RETURN_IF_FAILED_EX(hr); 
 
                         break;
@@ -429,7 +442,7 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
         }
 
         hr = FltParseFileNameInformation(pNameInfo.Get());
-        RETURN_IF_FAILED(hr);
+        RETURN_IF_FAILED_EX(hr);
 
         LPWSTR wszVolumeName;
         size_t cbVolumeName;
@@ -444,13 +457,13 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
         RETURN_IF_FAILED_ALLOC(wszFileName);
 
         hr = CopyStringW(wszFileName.Get(), wszVolumeName, cbFileName);
-        RETURN_IF_FAILED(hr);
+        RETURN_IF_FAILED_EX(hr);
 
-        hr = CopyStringW(wszFileName.Get() + ceVolumeName, pNameInfo->Name.Buffer + pNameInfo->Volume.Length/2, cbFileName - cbVolumeName);
-        RETURN_IF_FAILED(hr);
+        hr = CopyStringW(wszFileName.Get() + ceVolumeName, pNameInfo->Name.Buffer + pNameInfo->Volume.Length / 2, cbFileName - cbVolumeName);
+        RETURN_IF_FAILED_EX(hr);
 
         hr = pItem->SetFileName(wszFileName.Get(), cbFileName);
-        RETURN_IF_FAILED(hr);
+        RETURN_IF_FAILED_EX(hr);
 
         if (pData->Iopb->MajorFunction == IRP_MJ_READ)
         {
@@ -465,7 +478,7 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
         CHAR szIrpCode[MAX_STRING_LENGTH] = {};
         PrintIrpCode(pData->Iopb->MajorFunction, pData->Iopb->MinorFunction, szIrpCode, sizeof(szIrpCode));
 
-        TRACE(TL_VERBOSE, "PID: %u File: %.*ls %s\n", 
+        TRACE(TL_INFO, "PID: %u File: %.*ls %s\n", 
             FltGetRequestorProcessId(pData), pNameInfo->Name.Length, pNameInfo->Name.Buffer, szIrpCode);
     }
    
