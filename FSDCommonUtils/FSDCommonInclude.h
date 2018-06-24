@@ -27,10 +27,10 @@
 #define RETURN_IF_FAILED(hr) { if(FAILED(hr)) return hr; }
 
 #ifdef _KERNEL_MODE  
-#define RETURN_IF_FAILED_EX(hr) { if(FAILED(hr)) {TRACE(TL_ERROR, "%s:%d FAILED with status 0x%x", __FILE__, __LINE__, hr); return hr;} }
+#define RETURN_IF_FAILED_EX(hr) { if(FAILED(hr)) {TRACE(TL_ERROR, "%s:%d FAILED with status 0x%x\n", __FILE__, __LINE__, hr); return hr;} }
 #else
-#define RETURN_IF_FAILED_EX(hr) { if(FAILED(hr)) {printf("%s:%d FAILED with status 0x%x", __FILE__, __LINE__, hr); return hr;} }
-#define VOID_IF_FAILED_EX(hr)  { if(FAILED(hr)) {printf("%s:%d FAILED with status 0x%x", __FILE__, __LINE__, hr); return;} }
+#define RETURN_IF_FAILED_EX(hr) { if(FAILED(hr)) {printf("%s:%d FAILED with status 0x%x\n", __FILE__, __LINE__, hr); return hr;} }
+#define VOID_IF_FAILED_EX(hr)  { if(FAILED(hr)) {printf("%s:%d FAILED with status 0x%x\n", __FILE__, __LINE__, hr); return;} }
 #endif
 
 #define RETURN_IF_FAILED_ALLOC(ptr) { if(!ptr) return STATUS_NO_MEMORY;}
