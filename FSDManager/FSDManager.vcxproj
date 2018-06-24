@@ -35,10 +35,18 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="FSDFileExtension.cpp" />
+    <ClCompile Include="FSDFileInformation.cpp" />
     <ClCompile Include="FSDManager.cpp" />
+    <ClCompile Include="FSDProcess.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="FSDManager.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="FSDFileExtension.h" />
+    <ClInclude Include="FSDFileInformation.h" />
+    <ClInclude Include="FSDProcess.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F59848EE-721C-4C80-A6A3-ED074C3B9C0B}</ProjectGuid>

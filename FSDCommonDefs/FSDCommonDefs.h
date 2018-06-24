@@ -6,10 +6,21 @@
 //
 const LPCWSTR g_wszFSDPortName = L"\\FSDCommunicationPort";
 
+#define KB 1024
+#define MB (KB*KB)
+
 #define MAX_STRING_LENGTH 256
 #define MAX_FILE_NAME_LENGTH MAX_STRING_LENGTH
 #define MAX_FILE_NAME_SIZE (MAX_FILE_NAME_LENGTH * sizeof(WCHAR))
-#define MAX_FILE_EXTENTION_LENGTH 10
+
+#define MAX_COMMAND_LENGTH 10
+#define MAX_PARAMETER_LENGTH 256
+#define MAX_BUFFER_SIZE (2*MB)
+#define LZJDISTANCE_THRESHOLD 40 // 0: two blobs of random data; 100: high likelihood that two files are related
+#define ENTROPY_THRESHOLD 0.5
+#define WRITE_ENTROPY_TRIGGER 7.9
+
+
 
 enum MESSAGE_TYPE 
 {
@@ -104,6 +115,7 @@ struct FSD_OPERATION_SET_INFORMATION
 
     LPWSTR GetNewFileName()
     {
+        ASSERT(cbNewFileName != 0);
         return (LPWSTR)(pFileNames + cbInitialFileName);
     }
 

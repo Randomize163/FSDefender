@@ -90,7 +90,7 @@ private:
     CAutoHandle  m_hFile;
 };
 
-LPCWSTR GetFileExtentionFromFileName(LPWSTR wszFileName);
+LPCWSTR GetFileExtensionFromFileName(LPWSTR wszFileName);
 
 HRESULT UtilCreateFileW(HANDLE* phFile, LPCWSTR wszFileName);
 

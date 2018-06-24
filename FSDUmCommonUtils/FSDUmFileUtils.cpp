@@ -1,6 +1,6 @@
 #include "FSDUmFileUtils.h"
 
-LPCWSTR GetFileExtentionFromFileName(LPWSTR wszFileName)
+LPCWSTR GetFileExtensionFromFileName(LPWSTR wszFileName)
 {
     LPWSTR pLastPoint = NULL;
 
