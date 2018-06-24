@@ -15,14 +15,14 @@ public:
 
     // dwShareMode FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE
     // dwAccess GENERIC_READ, GENERIC_WRITE
-    HRESULT Initialize(LPCWSTR wszFileName, size_t cbFileName, DWORD dwAccess, DWORD dwShareMode, DWORD dwCreationDisposition)
+    HRESULT Initialize(LPCWSTR wszFileName, size_t cbFileName/*, DWORD dwAccess, DWORD dwShareMode, DWORD dwCreationDisposition*/)
     {
         HRESULT hr = S_OK;
 
         hr = NewCopyStringW(&m_wszName, wszFileName, cbFileName);
         RETURN_IF_FAILED(hr);
-
-        m_hFile = CreateFileW(m_wszName.Get(), dwAccess, dwShareMode, NULL, dwCreationDisposition, FILE_ATTRIBUTE_NORMAL, NULL);
+                   
+        m_hFile = CreateFileW(wszFileName, GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
         if (m_hFile == INVALID_HANDLE_VALUE)
         {
             return HRESULT_FROM_WIN32(GetLastError());
@@ -31,15 +31,17 @@ public:
         return S_OK;
     }
 
-    HRESULT Read(LPVOID pvBuffer, size_t* pcbBuffer)
+    HRESULT Read(LPVOID pvBuffer, DWORD* pdwBuffer)
     {
         HRESULT hr = S_OK;
 
-        DWORD cbReadSize;
-        bool fRead = ReadFile(m_hFile, pvBuffer, numeric_cast<DWORD>(*pcbBuffer), &cbReadSize, NULL);
+        HANDLE hFile = m_hFile.Get();
+
+        DWORD dwReadSize = 0;
+        bool fRead = ReadFile(hFile, pvBuffer, *pdwBuffer, &dwReadSize, NULL);
         if (!fRead)
         {
-            *pcbBuffer = 0;
+            *pdwBuffer = 0;
             hr = HRESULT_FROM_WIN32(GetLastError());
             if (hr == E_HANDLE)
             {
@@ -49,24 +51,24 @@ public:
             RETURN_IF_FAILED(hr);
         }
 
-        *pcbBuffer = cbReadSize;
+        *pdwBuffer = dwReadSize;
 
         return S_OK;
     }
 
-    HRESULT ReadAll(LPVOID pvBuffer, size_t* pcbBuffer)
+    HRESULT ReadAll(LPVOID pvBuffer, DWORD* pdwBuffer)
     {
         HRESULT hr = S_OK;
 
-        size_t cbData = 0;
+        ULONG cbData = 0;
         for (;;)
         {
-            if (cbData == *pcbBuffer)
+            if (cbData == *pdwBuffer)
             {
                 break;
             }
 
-            size_t cbRead = *pcbBuffer - cbData;
+            ULONG cbRead = *pdwBuffer - cbData;
             hr = Read((BYTE*)pvBuffer + cbData, &cbRead);
             RETURN_IF_FAILED(hr);
 
@@ -78,7 +80,7 @@ public:
             }
         }
 
-        *pcbBuffer = cbData;
+        *pdwBuffer = cbData;
 
         return S_OK;
     }
@@ -89,3 +91,9 @@ private:
 };
 
 LPCWSTR GetFileExtentionFromFileName(LPWSTR wszFileName);
+
+HRESULT UtilCreateFileW(HANDLE* phFile, LPCWSTR wszFileName);
+
+HRESULT UtilReadFile(HANDLE hFile, LPVOID pvBuffer, DWORD* pdwRead);
+
+HRESULT UtilTryToOpenFileW(HANDLE* phFile, LPCWSTR wszFileName, size_t cRetries);
