@@ -127,8 +127,8 @@ struct FSD_OPERATION_SET_INFORMATION
 
     void SetNewFileName(LPCWSTR wszFileName, size_t cbFileName)
     {
-        memcpy(GetNewFileName(), wszFileName, cbFileName);
         cbNewFileName = cbFileName;
+        memcpy(GetNewFileName(), wszFileName, cbFileName);
     }
 };
 

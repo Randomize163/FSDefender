@@ -76,7 +76,7 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
     case IRP_CLEANUP:
     case IRP_CLOSE:
     {
-        if (fCheckForDelete)
+        if (fCheckForDelete && !fDeleted)
         {
             HRESULT hr = S_OK;
 

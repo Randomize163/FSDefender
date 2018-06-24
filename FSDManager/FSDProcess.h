@@ -33,6 +33,7 @@ public:
         , cPrint(0)
         , cChangedExtensions(0)
         , cPrintFrequency(1000)
+        , fIsKilled(false)
     {
         GetProcessNameByPid(uPid, wszProcessName, MAX_FILE_NAME_LENGTH);
     }
@@ -83,6 +84,12 @@ public:
         uTrigger += ChangeExtensionTrigger();
 
         return uTrigger >= 3;
+    }
+
+    void Kill()
+    {
+        ASSERT(fIsKilled == false);
+        fIsKilled = true;
     }
 
     void DeleteFile()
@@ -166,10 +173,10 @@ public:
 
         cPrint++;
 
-        if (cPrint >= cPrintFrequency)
+        /*if (cPrint >= cPrintFrequency)
         {
             cPrintFrequency = cPrint * 2;
-        }
+        }*/
     }
 
     void SetFileInfo(FSD_OPERATION_DESCRIPTION* pOperation, LPCWSTR wszScanDir)
@@ -272,6 +279,11 @@ public:
         }
     }
 
+    bool IsKilled()
+    {
+        return fIsKilled;
+    }
+
 private:
     static bool IsFileFromSafeDir(wstring wszFileName, wstring wsdDirName)
     {
@@ -340,6 +352,8 @@ private:
 
     size_t cbFilesRead;
     size_t cbFilesWrite;
+
+    bool   fIsKilled;
 
     unordered_map<wstring, CFileExtension> aReadExtensions;
     unordered_map<wstring, CFileExtension> aWriteExtensions;
