@@ -31,6 +31,7 @@ public:
         , cFilesMovedOut(0)
         , cFilesMovedIn(0)
         , cPrint(0)
+        , cMaliciousPrint(0)
         , cChangedExtensions(0)
         , cPrintFrequency(1000)
         , fIsKilled(false)
@@ -83,7 +84,25 @@ public:
         //uTrigger += RemoveFromFolderTrigger();
         uTrigger += ChangeExtensionTrigger();
 
-        return uTrigger >= 3;
+        if (uTrigger >= 3)
+        {
+            if (cMaliciousPrint % 1000 == 0)
+            {
+                printf("Process %u is malicious:\n", uPid);
+                printf("EntropyTrigger:      %u\n", EntropyTrigger() ? 1 : 0);
+                printf("FileDistanceTrigger: %u\n", FileDistanceTrigger() ? 1 : 0);
+                printf("DeletionTrigger:     %u\n", DeletionTrigger() ? 1 : 0);
+                printf("RenameTrigger:       %u\n", RenameTrigger() ? 1 : 0);
+                printf("MoveInTrigger:       %u\n", MoveInTrigger() ? 1 : 0);
+                printf("ChangeExtTrigger:    %u\n", ChangeExtensionTrigger() ? 1 : 0);
+
+                cMaliciousPrint++;
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     void Kill()
@@ -337,6 +356,8 @@ private:
 
     size_t cPrint;
     size_t cPrintFrequency;
+
+    size_t cMaliciousPrint;
 
     double dSumOfWeightedWriteEntropies;
     double dSumOfWeightedReadEntropies;
