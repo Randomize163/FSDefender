@@ -17,7 +17,7 @@ const LPCWSTR g_wszFSDPortName = L"\\FSDCommunicationPort";
 #define MAX_PARAMETER_LENGTH 256
 #define MAX_BUFFER_SIZE (2*MB)
 #define LZJDISTANCE_THRESHOLD 40 // 0: two blobs of random data; 100: high likelihood that two files are related
-#define ENTROPY_THRESHOLD 0.5
+#define ENTROPY_THRESHOLD(x) ((x * 0.623) + 129.5721)
 #define WRITE_ENTROPY_TRIGGER 7.9
 
 

@@ -294,8 +294,9 @@ private:
     {
         if (dSumOfWeightedWriteEntropies > 0 && dSumOfWeightedReadEntropies > 0)
         {
-            return dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy -
-                dSumOfWeightedReadEntropies / dSumOfWeightsForReadEntropy > ENTROPY_THRESHOLD;
+            double dAverageWriteEntropy = dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy;
+            double dAverageReadEntropy = dSumOfWeightedReadEntropies / dSumOfWeightsForReadEntropy;
+            return dAverageWriteEntropy - dAverageReadEntropy > ENTROPY_THRESHOLD(dAverageReadEntropy);
         }
         else if (dSumOfWeightedWriteEntropies > 0)
         {
