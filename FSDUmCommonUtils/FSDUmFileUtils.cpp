@@ -58,6 +58,8 @@ HRESULT UtilTryToOpenFileW(HANDLE* phFile, LPCWSTR wszFileName, size_t cRetries)
             return E_FILE_NOT_FOUND;
         }
 
+        Sleep(10);
+
         cCount++;
     }
 

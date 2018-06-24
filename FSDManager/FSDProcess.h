@@ -32,6 +32,7 @@ public:
         , cFilesMovedIn(0)
         , cPrint(0)
         , cChangedExtensions(0)
+        , cPrintFrequency(1000)
     {
         GetProcessNameByPid(uPid, wszProcessName, MAX_FILE_NAME_LENGTH);
     }
@@ -60,7 +61,7 @@ public:
 
         default:
         {
-            ASSERT(false);
+            break;
         }
         }
     }
@@ -148,9 +149,9 @@ public:
 
     void PrintInfo(bool fUnconditionally = false)
     {
-        if (cPrint % 1000 == 0 || fUnconditionally)
+        if (cPrint % cPrintFrequency == 0 || fUnconditionally)
         {
-            printf("Process: %ls PID: %u\n", wszProcessName, uPid);
+            printf("\nProcess: %ls PID: %u\n", wszProcessName, uPid);
             cout << "Read: " << cbFilesRead << " Bytes, Write: " << cbFilesWrite << " Bytes" << endl
                 << "Files Deleted: " << cFilesDeleted << endl
                 << "Files Renamed: " << cFilesRenamed << endl
@@ -159,11 +160,16 @@ public:
                 << "Removed From folder: " << cFilesMovedOut << endl
                 << "Moved to folder: " << cFilesMovedIn << endl
                 << "LZJ distance exceeded: " << cLZJDistanceExceed << endl
-                << "File extensions changed: " << cChangedExtensions << endl;
+                << "File extensions changed: " << cChangedExtensions << " Read: " << aReadExtensions.size() << " Write: " << aWriteExtensions.size() << endl;
             printf("----------------------------------------------------------------------\n");
         }
 
         cPrint++;
+
+        if (cPrint >= cPrintFrequency)
+        {
+            cPrintFrequency = cPrint * 2;
+        }
     }
 
     void SetFileInfo(FSD_OPERATION_DESCRIPTION* pOperation, LPCWSTR wszScanDir)
@@ -317,6 +323,7 @@ private:
     WCHAR wszProcessName[MAX_FILE_NAME_LENGTH];
 
     size_t cPrint;
+    size_t cPrintFrequency;
 
     double dSumOfWeightedWriteEntropies;
     double dSumOfWeightedReadEntropies;
