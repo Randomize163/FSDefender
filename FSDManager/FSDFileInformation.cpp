@@ -118,7 +118,7 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
 
             ULONG uSimilarity = similarity(LZJvalue, LZJnewVaue);
             
-            printf("Similarity of %ls: %u\n", wszFileName.c_str(), uSimilarity);
+            //printf("Similarity of %ls: %u\n", wszFileName.c_str(), uSimilarity);
             pProcess->LZJDistanceCalculated(uSimilarity);
 
             // update LZJ value

@@ -408,7 +408,7 @@ private:
             return false;
         }
 
-        ASSERT(cFilesMovedIn > cHighEntropyReplaces);
+        ASSERT(cFilesMovedIn >= cHighEntropyReplaces);
 
         return (double)cHighEntropyReplaces / (double)cFilesMovedIn > HIGH_ENTROPY_REPLACES_THRESHOLD;
     }
@@ -478,7 +478,7 @@ private:
             return false;
         }
 
-        ASSERT(cAccessedFiles - cChangedExtensions > 0);
+        ASSERT(cAccessedFiles >= cChangedExtensions);
 
         return (double)cChangedExtensions / (double)cAccessedFiles > CHANGE_EXTENSION_THRESHOLD;
     }
@@ -509,8 +509,6 @@ private:
 
     size_t cbFilesRead;
     size_t cbFilesWrite;
-
-    
 
     bool   fIsKilled;
 
