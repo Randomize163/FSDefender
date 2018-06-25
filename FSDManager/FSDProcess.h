@@ -102,32 +102,32 @@ public:
         PrintInfo();
 
         ULONG uTrigger = 0;
-
-        uTrigger += EntropyTrigger();
-        uTrigger += FileDistanceTrigger();
-        uTrigger += FileExtensionsTrigger();
-        uTrigger += DeletionTrigger();
-        uTrigger += RenameTrigger();
-        uTrigger += AccessTypeTrigger();
-        uTrigger += MoveInTrigger();
-        uTrigger += ChangeExtensionTrigger();
-        uTrigger += HighEntropyReplacesTrigger();
+        double ET, ETT, FDT, FDTT, FET, FETT, DT, DTT, RT, RTT, ATT, ATTT, MIT, MITT, CET, CETT, HERT, HERTT;
+        bool bET = EntropyTrigger(ET, ETT);
+        bool  bFDT = FileDistanceTrigger(FDT, FDTT);
+        bool bFET = FileExtensionsTrigger(FET, FETT);
+        bool bDT = DeletionTrigger(DT, DTT);
+        bool bRT = RenameTrigger(RT, RTT);
+        bool bATT = AccessTypeTrigger(ATT, ATTT);
+        bool bMIT = MoveInTrigger(MIT, MITT);
+        bool bCET = ChangeExtensionTrigger(CET, CETT);
+        bool bHRT = HighEntropyReplacesTrigger(HERT, HERTT);
+        uTrigger = bET + bFDT + bFET + bDT + bRT + bATT + bMIT + bCET + bHRT;
 
         if (uTrigger >= 5)
         {
             if (cMaliciousPrint % 1000 == 0)
             {
                 printf("Process %u is malicious:\n", uPid);
-                printf("EntropyTrigger:      %u\n", EntropyTrigger() ? 1 : 0);
-                printf("FileDistanceTrigger: %u\n", FileDistanceTrigger() ? 1 : 0);
-                printf("FileExtTrigger:      %u\n", FileExtensionsTrigger() ? 1 : 0);
-                printf("DeletionTrigger:     %u\n", DeletionTrigger() ? 1 : 0);
-                printf("RenameTrigger:       %u\n", RenameTrigger() ? 1 : 0);
-                printf("AccessTypeTrigger    %u\n", AccessTypeTrigger() ? 1 : 0);
-                printf("MoveInTrigger:       %u\n", MoveInTrigger() ? 1 : 0);
-                printf("ChangeExtTrigger:    %u\n", ChangeExtensionTrigger() ? 1 : 0);
-                printf("HighEntropyReplaces: %u\n", HighEntropyReplacesTrigger() ? 1 : 0);
-
+                printf("EntropyTrigger:      %u |   %f  |   %f  \n", bET, ET, ETT);
+                printf("FileDistanceTrigger: %u |   %f  |   %f  \n", bFDT, FDT, FDTT);
+                printf("FileExtTrigger:      %u |   %f  |   %f  \n", bFET, FET, FETT);
+                printf("DeletionTrigger:     %u |   %f  |   %f  \n", bDT, DT, DTT);
+                printf("RenameTrigger:       %u |   %f  |   %f  \n", bRT, RT, RTT);
+                printf("AccessTypeTrigger    %u |   %f  |   %f  \n", bATT, ATT, ATTT);
+                printf("MoveInTrigger:       %u |   %f  |   %f  \n", bMIT, MIT, MITT);
+                printf("ChangeExtTrigger:    %u |   %f  |   %f  \n", bCET, CET, CETT);
+                printf("HighEntropyReplaces: %u |   %f  |   %f  \n", bHRT, HERT, HERTT);
                 cMaliciousPrint++;
             }
 
@@ -137,27 +137,31 @@ public:
         return false;
     }
 
-    bool AccessTypeTrigger()
+    bool AccessTypeTrigger(double& res, double& threshold)
     {
+        threshold = ACCESS_TYPE_THRESHOLD;
         if (cbFilesRead + cbFilesWrite == 0)
         {
+            res = 0;
             return false;
         }
-
-        return (double)cbFilesWrite / (double)(cbFilesRead + cbFilesWrite) > ACCESS_TYPE_THRESHOLD;
+        res = (double)cbFilesWrite / (double)(cbFilesRead + cbFilesWrite);
+        return res > threshold;
     }
 
-    bool FileExtensionsTrigger()
+    bool FileExtensionsTrigger(double& res, double& threshold)
     {
+        threshold = FILE_EXTENSIONS_THRESHOLD;
         if (aReadExtensions.size() < aWriteExtensions.size())
         {
+            res = 0;
             return false;
         }
 
         vector<wstring> aDiff;
         auto it = set_difference(aReadExtensions.begin(), aReadExtensions.end(), aWriteExtensions.begin(), aWriteExtensions.end(), aDiff.begin());
-        
-        return (it - aDiff.begin()) > FILE_EXTENSIONS_THRESHOLD;
+        res = (double)(it - aDiff.begin());
+        return res > threshold;
     }
 
     void Kill()
@@ -198,8 +202,8 @@ public:
         UNREFERENCED_PARAMETER(aNewFile);
        
         cFilesMovedIn++;
-
-        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy()))
+        double res, threshold;
+        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy(), res, threshold))
         {
             cHighEntropyReplaces++;
         }
@@ -249,6 +253,33 @@ public:
                 << "Moved to folder: " << cFilesMovedIn << endl
                 << "LZJ distance exceeded: " << cLZJDistanceExceed << endl
                 << "File extensions changed: " << cChangedExtensions << " Read: " << aReadExtensions.size() << " Write: " << aWriteExtensions.size() << endl;
+            cout << "Read extensions : ";
+            int extCount = 0;
+            int maxExtCount = 10;
+            for (auto readExtension : aReadExtensions)
+            {
+                cout << readExtension.c_str() << " ";
+                extCount++;
+                if (extCount == maxExtCount)
+                {
+                    cout << ". . . ";
+                    break;
+                }
+            }
+            extCount = 0;
+            cout << endl;
+            cout << "Write extensions : ";
+            for (auto writeExtension : aWriteExtensions)
+            {
+                cout << writeExtension.c_str() << " ";
+                extCount++;
+                if (extCount == maxExtCount)
+                {
+                    cout << ". . . ";
+                    break;
+                }
+            }
+            cout << endl;
             printf("----------------------------------------------------------------------\n");
         }
 
@@ -371,13 +402,16 @@ private:
         return wcsstr(wszFileName.c_str(), wsdDirName.c_str()) != NULL;
     }
 
-    static bool EntropyExceeded(double dAverageWriteEntropy, double dAverageReadEntropy)
+    static bool EntropyExceeded(double dAverageWriteEntropy, double dAverageReadEntropy, double& res, double& threshold)
     {
         if (dAverageWriteEntropy > 0 && dAverageReadEntropy > 0)
         {
+            res = dAverageWriteEntropy - dAverageReadEntropy;
+            threshold = ENTROPY_THRESHOLD(dAverageReadEntropy);
             return dAverageWriteEntropy - dAverageReadEntropy > ENTROPY_THRESHOLD(dAverageReadEntropy);
         }
-        
+        res = dAverageWriteEntropy;
+        threshold = WRITE_ENTROPY_TRIGGER;
         return dAverageWriteEntropy > WRITE_ENTROPY_TRIGGER;
     }
 
@@ -401,53 +435,72 @@ private:
         return dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy;
     }
 
-    bool HighEntropyReplacesTrigger()
+    bool HighEntropyReplacesTrigger(double& res, double& threshold)
     {
+        threshold = HIGH_ENTROPY_REPLACES_THRESHOLD;
         if (cFilesMovedIn == 0)
         {
+            res = 0;
             return false;
         }
 
         ASSERT(cFilesMovedIn >= cHighEntropyReplaces);
-
-        return (double)cHighEntropyReplaces / (double)cFilesMovedIn > HIGH_ENTROPY_REPLACES_THRESHOLD;
+        res = (double)cHighEntropyReplaces / (double)cFilesMovedIn;
+        return res > threshold;
     }
 
-    bool EntropyTrigger()
+    bool EntropyTrigger(double& res, double& threshold)
     {
-        return EntropyExceeded(AverageWriteEntropy(), AverageReadEntropy());
+        return EntropyExceeded(AverageWriteEntropy(), AverageReadEntropy(), res, threshold);
     }
 
-    bool FileDistanceTrigger()
+    bool FileDistanceTrigger(double& res, double& threshold)
     {
+        threshold = FILE_DISTANCE_RATIO_THRESHOLD;
         ASSERT(cLZJDistanceCalculated >= cLZJDistanceExceed);
         if (cLZJDistanceCalculated == 0)
         {
+            res = 0;
+            threshold = 0;
             return false;
         }
-
-        return ((double)cLZJDistanceExceed / (double)cLZJDistanceCalculated > FILE_DISTANCE_RATIO_THRESHOLD) 
-            || (cLZJDistanceExceed > FILE_DISTANCE_COUNT_THRESHOLD);
+        res = (double)cLZJDistanceExceed / (double)cLZJDistanceCalculated;
+        threshold = FILE_DISTANCE_RATIO_THRESHOLD;
+        if (res > threshold)
+        {
+            return true;
+        }
+        else if (cLZJDistanceExceed > FILE_DISTANCE_COUNT_THRESHOLD)
+        {
+            res = (double)cLZJDistanceExceed;
+            threshold = FILE_DISTANCE_COUNT_THRESHOLD;
+            return true;
+        }
+        return false;
     }
 
-    bool RenameTrigger()
+    bool RenameTrigger(double& res, double& threshold)
     {
+        threshold = RENAME_THRESHOLD;
         if (GetFileAccessedCount() == 0)
         {
+            res = 0;
             return false;
         }
-
-        return (double)cFilesRenamed / (double)GetFileAccessedCount() > RENAME_THRESHOLD;
+        res = (double)cFilesRenamed / (double)GetFileAccessedCount();
+        return res > threshold;
     }
 
-    bool DeletionTrigger()
+    bool DeletionTrigger(double& res, double& threshold)
     {
+        threshold = DELETION_THRESHOLD;
         if (GetFileAccessedCount() == 0)
         {
+            res = 0;
             return false;
         }
-
-        return (double)(cFilesDeleted + cFilesMovedOut) / (double)GetFileAccessedCount() > DELETION_THRESHOLD;
+        res = (double)(cFilesDeleted + cFilesMovedOut) / (double)GetFileAccessedCount();
+        return res > threshold;
     }
 
     size_t GetFileAccessedCount()
@@ -455,32 +508,37 @@ private:
         return (aFileNamesRead.size() + aFileNamesWrite.size())/2;
     }
 
-    bool MoveInTrigger()
+    bool MoveInTrigger(double& res, double& threshold)
     {
+        threshold = MOVE_IN_THRESHOLD;
         if (cFilesDeleted + cFilesMovedOut == 0 || cFilesMovedIn == 0)
         {
+            res = 0;
             return false;
         }
 
         if (cFilesMovedIn > cFilesDeleted + cFilesMovedOut)
         {
-            return (double)cFilesMovedIn / cFilesDeleted + cFilesMovedOut < MOVE_IN_THRESHOLD;
+            res = (double)cFilesMovedIn / cFilesDeleted + cFilesMovedOut;
+            return res < threshold;
         }
-
-        return (double)(cFilesDeleted + cFilesMovedOut) / cFilesMovedIn < MOVE_IN_THRESHOLD;
+        res = (double)(cFilesDeleted + cFilesMovedOut) / cFilesMovedIn;
+        return res < threshold;
     }
 
-    bool ChangeExtensionTrigger()
+    bool ChangeExtensionTrigger(double& res, double& threshold)
     {
+        threshold = CHANGE_EXTENSION_THRESHOLD;
         size_t cAccessedFiles = GetFileAccessedCount();
         if (cAccessedFiles == 0)
         {
+            res = 0;
             return false;
         }
 
         ASSERT(cAccessedFiles >= cChangedExtensions);
-
-        return (double)cChangedExtensions / (double)cAccessedFiles > CHANGE_EXTENSION_THRESHOLD;
+        res = (double)cChangedExtensions / (double)cAccessedFiles;
+        return res > threshold;
     }
 
     ULONG uPid;
