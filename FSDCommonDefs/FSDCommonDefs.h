@@ -19,6 +19,7 @@ const LPCWSTR g_wszFSDPortName = L"\\FSDCommunicationPort";
 #define LZJDISTANCE_THRESHOLD 40 // 0: two blobs of random data; 100: high likelihood that two files are related
 #define ENTROPY_THRESHOLD(x) ((8 - x) / 3)
 #define WRITE_ENTROPY_TRIGGER 7.9
+#define HIGH_ENTROPY_REPLACES_THRESHOLD 0.25
 
 enum MESSAGE_TYPE 
 {

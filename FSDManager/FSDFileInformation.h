@@ -19,13 +19,15 @@ class CFileInformation
 public:
     CFileInformation(LPCWSTR wszFileName)
         : wszFileName(wszFileName)
-        , cAccessedForRead(0)
-        , cAccessedForWrite(0)
+        , cbAccessedForRead(0)
+        , cbAccessedForWrite(0)
         , fDeleted(false)
         , fCheckForDelete(false)
         , fRecalculateSimilarity(true)
-        , dAverageWriteEntropy(0)
-        , dAverageReadEntropy(0)
+        , dSumOfWeightedReadEntropies(0)
+        , dSumOfWeightsForReadEntropy(0)
+        , dSumOfWeightedWriteEntropies(0)
+        , dSumOfWeightsForWriteEntropy(0)
     {}
 
     void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CProcess* pProcess);
@@ -35,6 +37,44 @@ public:
         wszFileName = wszNewName;
     }
 
+    void UpdateWriteEntropy(double dWriteEntropy, size_t cbWrite)
+    {
+        double w = 0.125 * round(dWriteEntropy) * cbWrite;
+        dSumOfWeightedWriteEntropies += w * dWriteEntropy;
+        dSumOfWeightsForWriteEntropy += w;
+
+        cbAccessedForWrite += cbWrite;
+    }
+
+    void UpdateReadEntropy(double dReadEntropy, size_t cbRead)
+    {
+        double w = 0.125 * round(dReadEntropy) * cbRead;
+        dSumOfWeightedReadEntropies += w * dReadEntropy;
+        dSumOfWeightsForReadEntropy += w;
+
+        cbAccessedForRead += cbRead;
+    }
+
+    double AverageReadEntropy()
+    {
+        if (dSumOfWeightsForReadEntropy == 0)
+        {
+            return 0;
+        }
+        
+        return dSumOfWeightedReadEntropies / dSumOfWeightsForReadEntropy;
+    }
+
+    double AverageWriteEntropy()
+    {
+        if (dSumOfWeightsForWriteEntropy == 0)
+        {
+            return 0;
+        }
+
+        return dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy;
+    }
+
     void MoveOut()
     {
         fDeleted = true;
@@ -42,11 +82,14 @@ public:
 
 public:
     wstring wszFileName;
-    size_t cAccessedForRead;
-    size_t cAccessedForWrite;
+    size_t cbAccessedForRead;
+    size_t cbAccessedForWrite;
 
-    double dAverageWriteEntropy;
-    double dAverageReadEntropy;
+    double dSumOfWeightedWriteEntropies;
+    double dSumOfWeightedReadEntropies;
+
+    double dSumOfWeightsForWriteEntropy;
+    double dSumOfWeightsForReadEntropy;
 
     bool fDeleted;
     bool fCheckForDelete;

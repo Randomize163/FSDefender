@@ -9,6 +9,8 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
     // add exstension to process
     pProcess->AddFileExstension(pOperation);
 
+    pProcess->RegisterAccess(pOperation, this);
+
     // add process to hash
     aProcesses.insert({ pProcess->GetPid() , pProcess });
 
@@ -16,12 +18,11 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
     {
     case IRP_READ:
     {
-        cAccessedForRead++;
-
         FSD_OPERATION_READ* pReadOp = pOperation->ReadDescription();
 
         if (pReadOp->fReadEntropyCalculated)
         {
+            UpdateReadEntropy(pReadOp->dReadEntropy, pReadOp->cbRead);
             pProcess->UpdateReadEntropy(pReadOp->dReadEntropy, pReadOp->cbRead);
         }
 
@@ -30,12 +31,11 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
 
     case IRP_WRITE:
     {
-        cAccessedForWrite++;
-
         FSD_OPERATION_WRITE* pWriteOp = pOperation->WriteDescription();
 
         if (pWriteOp->fWriteEntropyCalculated)
         {
+            UpdateWriteEntropy(pWriteOp->dWriteEntropy, pWriteOp->cbWrite);
             pProcess->UpdateWriteEntropy(pWriteOp->dWriteEntropy, pWriteOp->cbWrite);
             fRecalculateSimilarity = true;
         }
@@ -117,11 +117,9 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
             vector<int> LZJnewVaue = digest(DIGEST_SIZE, pBuffer.Get(), dwRead);
 
             ULONG uSimilarity = similarity(LZJvalue, LZJnewVaue);
-            if (uSimilarity < LZJDISTANCE_THRESHOLD) // TODO: modify threshold
-            {
-                printf("Similarity of %ls: %u\n", wszFileName.c_str(), uSimilarity);
-                pProcess->LZJDistanceExceed();
-            }
+            
+            printf("Similarity of %ls: %u\n", wszFileName.c_str(), uSimilarity);
+            pProcess->LZJDistanceCalculated(uSimilarity);
 
             // update LZJ value
             LZJvalue = LZJnewVaue;

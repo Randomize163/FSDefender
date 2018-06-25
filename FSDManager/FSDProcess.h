@@ -6,9 +6,21 @@
 #include "FSDUmFileUtils.h"
 #include <iostream>
 #include <unordered_map>
+#include <set>
 #include <string>
+#include <iterator>
+#include <algorithm>
 #include "FSDCommonInclude.h"
 #include "FSDCommonDefs.h"
+
+#define FILE_DISTANCE_RATIO_THRESHOLD 0.10
+#define FILE_DISTANCE_COUNT_THRESHOLD 15
+#define CHANGE_EXTENSION_THRESHOLD 0.25
+#define FILE_EXTENSIONS_THRESHOLD 5
+#define DELETION_THRESHOLD 0.3
+#define RENAME_THRESHOLD 0.3
+#define ACCESS_TYPE_THRESHOLD 0.9
+#define MOVE_IN_THRESHOLD 0.01
 
 using namespace std;
 
@@ -28,8 +40,10 @@ public:
         , cbFilesRead(0)
         , cbFilesWrite(0)
         , cLZJDistanceExceed(0)
+        , cLZJDistanceCalculated(0)
         , cFilesMovedOut(0)
         , cFilesMovedIn(0)
+        , cHighEntropyReplaces(0)
         , cPrint(0)
         , cMaliciousPrint(0)
         , cChangedExtensions(0)
@@ -51,18 +65,33 @@ public:
         {
         case IRP_READ:
         {
-            auto fileExtension = aReadExtensions.insert({ wszFileExtension, CFileExtension(wszFileExtension) });
-            fileExtension.first->second.RegisterAccess(pOperation);
+            aReadExtensions.insert({ wszFileExtension});
         }
 
         case IRP_WRITE:
         {
-            auto fileExtension = aWriteExtensions.insert({ wszFileExtension, CFileExtension(wszFileExtension) });
-            fileExtension.first->second.RegisterAccess(pOperation);
+            aWriteExtensions.insert({ wszFileExtension});
         }
 
         default:
         {
+            break;
+        }
+        }
+    }
+
+    void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CFileInformation* pInfo)
+    {
+        switch (pOperation->uMajorType)
+        {
+        case IRP_READ:
+        {
+            aFileNamesRead.insert(pInfo);
+            break;
+        }
+        case IRP_WRITE:
+        {
+            aFileNamesWrite.insert(pInfo);
             break;
         }
         }
@@ -76,25 +105,28 @@ public:
 
         uTrigger += EntropyTrigger();
         uTrigger += FileDistanceTrigger();
-        //uTrigger += FileExtensionsTrigger();
+        uTrigger += FileExtensionsTrigger();
         uTrigger += DeletionTrigger();
         uTrigger += RenameTrigger();
-        //uTrigger += AccessTypeTrigger();
+        uTrigger += AccessTypeTrigger();
         uTrigger += MoveInTrigger();
-        //uTrigger += RemoveFromFolderTrigger();
         uTrigger += ChangeExtensionTrigger();
+        uTrigger += HighEntropyReplacesTrigger();
 
-        if (uTrigger >= 3)
+        if (uTrigger >= 5)
         {
             if (cMaliciousPrint % 1000 == 0)
             {
                 printf("Process %u is malicious:\n", uPid);
                 printf("EntropyTrigger:      %u\n", EntropyTrigger() ? 1 : 0);
                 printf("FileDistanceTrigger: %u\n", FileDistanceTrigger() ? 1 : 0);
+                printf("FileExtTrigger:      %u\n", FileExtensionsTrigger() ? 1 : 0);
                 printf("DeletionTrigger:     %u\n", DeletionTrigger() ? 1 : 0);
                 printf("RenameTrigger:       %u\n", RenameTrigger() ? 1 : 0);
+                printf("AccessTypeTrigger    %u\n", AccessTypeTrigger() ? 1 : 0);
                 printf("MoveInTrigger:       %u\n", MoveInTrigger() ? 1 : 0);
                 printf("ChangeExtTrigger:    %u\n", ChangeExtensionTrigger() ? 1 : 0);
+                printf("HighEntropyReplaces: %u\n", HighEntropyReplacesTrigger() ? 1 : 0);
 
                 cMaliciousPrint++;
             }
@@ -103,6 +135,29 @@ public:
         }
 
         return false;
+    }
+
+    bool AccessTypeTrigger()
+    {
+        if (cbFilesRead + cbFilesWrite == 0)
+        {
+            return false;
+        }
+
+        return (double)cbFilesWrite / (double)(cbFilesRead + cbFilesWrite) > ACCESS_TYPE_THRESHOLD;
+    }
+
+    bool FileExtensionsTrigger()
+    {
+        if (aReadExtensions.size() < aWriteExtensions.size())
+        {
+            return false;
+        }
+
+        vector<wstring> aDiff;
+        auto it = set_difference(aReadExtensions.begin(), aReadExtensions.end(), aWriteExtensions.begin(), aWriteExtensions.end(), aDiff.begin());
+        
+        return (it - aDiff.begin()) > FILE_EXTENSIONS_THRESHOLD;
     }
 
     void Kill()
@@ -116,9 +171,13 @@ public:
         cFilesDeleted++;
     }
 
-    void LZJDistanceExceed()
+    void LZJDistanceCalculated(ULONG uSimilarity)
     {
-        cLZJDistanceExceed++;
+        cLZJDistanceCalculated++;
+        if (uSimilarity < LZJDISTANCE_THRESHOLD)
+        {
+            cLZJDistanceExceed++;
+        }
     }
 
     void RenameFile()
@@ -137,10 +196,13 @@ public:
     {
         UNREFERENCED_PARAMETER(aOldFile);
         UNREFERENCED_PARAMETER(aNewFile);
-        // TODO: Complete function
-
+       
         cFilesMovedIn++;
 
+        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy()))
+        {
+            cHighEntropyReplaces++;
+        }
     }
 
     void ReplaceFiles(CFileInformation& aOldFile, CFileInformation& aNewFile);
@@ -309,45 +371,116 @@ private:
         return wcsstr(wszFileName.c_str(), wsdDirName.c_str()) != NULL;
     }
 
-    bool EntropyTrigger()
+    static bool EntropyExceeded(double dAverageWriteEntropy, double dAverageReadEntropy)
     {
-        if (dSumOfWeightedWriteEntropies > 0 && dSumOfWeightedReadEntropies > 0)
+        if (dAverageWriteEntropy > 0 && dAverageReadEntropy > 0)
         {
-            double dAverageWriteEntropy = dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy;
-            double dAverageReadEntropy = dSumOfWeightedReadEntropies / dSumOfWeightsForReadEntropy;
             return dAverageWriteEntropy - dAverageReadEntropy > ENTROPY_THRESHOLD(dAverageReadEntropy);
         }
-        else if (dSumOfWeightedWriteEntropies > 0)
+        
+        return dAverageWriteEntropy > WRITE_ENTROPY_TRIGGER;
+    }
+
+    double AverageReadEntropy()
+    {
+        if (dSumOfWeightsForReadEntropy == 0)
         {
-            return dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy > WRITE_ENTROPY_TRIGGER;
+            return 0;
         }
 
-        return false;
+        return dSumOfWeightedReadEntropies / dSumOfWeightsForReadEntropy;
+    }
+
+    double AverageWriteEntropy()
+    {
+        if (dSumOfWeightsForWriteEntropy == 0)
+        {
+            return 0;
+        }
+
+        return dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy;
+    }
+
+    bool HighEntropyReplacesTrigger()
+    {
+        if (cFilesMovedIn == 0)
+        {
+            return false;
+        }
+
+        ASSERT(cFilesMovedIn > cHighEntropyReplaces);
+
+        return (double)cHighEntropyReplaces / (double)cFilesMovedIn > HIGH_ENTROPY_REPLACES_THRESHOLD;
+    }
+
+    bool EntropyTrigger()
+    {
+        return EntropyExceeded(AverageWriteEntropy(), AverageReadEntropy());
     }
 
     bool FileDistanceTrigger()
     {
-        return cLZJDistanceExceed > 0;
+        ASSERT(cLZJDistanceCalculated >= cLZJDistanceExceed);
+        if (cLZJDistanceCalculated == 0)
+        {
+            return false;
+        }
+
+        return ((double)cLZJDistanceExceed / (double)cLZJDistanceCalculated > FILE_DISTANCE_RATIO_THRESHOLD) 
+            || (cLZJDistanceExceed > FILE_DISTANCE_COUNT_THRESHOLD);
     }
 
     bool RenameTrigger()
     {
-        return cFilesRenamed > 0;
+        if (GetFileAccessedCount() == 0)
+        {
+            return false;
+        }
+
+        return (double)cFilesRenamed / (double)GetFileAccessedCount() > RENAME_THRESHOLD;
     }
 
     bool DeletionTrigger()
     {
-        return cFilesDeleted + cFilesMovedOut > 0;
+        if (GetFileAccessedCount() == 0)
+        {
+            return false;
+        }
+
+        return (double)(cFilesDeleted + cFilesMovedOut) / (double)GetFileAccessedCount() > DELETION_THRESHOLD;
+    }
+
+    size_t GetFileAccessedCount()
+    {
+        return (aFileNamesRead.size() + aFileNamesWrite.size())/2;
     }
 
     bool MoveInTrigger()
     {
-        return cFilesMovedIn > 0;
+        if (cFilesDeleted + cFilesMovedOut == 0 || cFilesMovedIn == 0)
+        {
+            return false;
+        }
+
+        if (cFilesMovedIn > cFilesDeleted + cFilesMovedOut)
+        {
+            return (double)cFilesMovedIn / cFilesDeleted + cFilesMovedOut < MOVE_IN_THRESHOLD;
+        }
+
+        return (double)(cFilesDeleted + cFilesMovedOut) / cFilesMovedIn < MOVE_IN_THRESHOLD;
     }
 
     bool ChangeExtensionTrigger()
     {
-        return cChangedExtensions > 0;
+        size_t cAccessedFiles = GetFileAccessedCount();
+        if (cAccessedFiles == 0)
+        {
+            return false;
+        }
+
+        ASSERT(cAccessedFiles - cChangedExtensions > 0);
+
+        return (double)cChangedExtensions / (double)cAccessedFiles > CHANGE_EXTENSION_THRESHOLD;
     }
 
     ULONG uPid;
@@ -371,12 +504,19 @@ private:
     size_t cFilesMovedIn;                   // Counts files that were moved to safe zone from outside
     size_t cChangedExtensions;              // Counts files that changed their Extension after rename operation
     size_t cLZJDistanceExceed;              // Counts similarity violation
+    size_t cLZJDistanceCalculated;
+    size_t cHighEntropyReplaces;            // Counts files that were replaced with high entropy files
 
     size_t cbFilesRead;
     size_t cbFilesWrite;
 
+    
+
     bool   fIsKilled;
 
-    unordered_map<wstring, CFileExtension> aReadExtensions;
-    unordered_map<wstring, CFileExtension> aWriteExtensions;
+    set<CFileInformation*> aFileNamesRead;
+    set<CFileInformation*> aFileNamesWrite;
+
+    set<wstring> aReadExtensions;
+    set<wstring> aWriteExtensions;
 };
