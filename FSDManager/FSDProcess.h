@@ -192,24 +192,35 @@ public:
     void MoveFileOut(CFileInformation& aOldFile)
     {
         cFilesMovedOut++;
+        cFilesDeleted++;
 
         aOldFile.MoveOut();
     }
 
-    void MoveFileIn(CFileInformation& aOldFile, CFileInformation& aNewFile)
+    void MoveFileIn()
     {
-        UNREFERENCED_PARAMETER(aOldFile);
-        UNREFERENCED_PARAMETER(aNewFile);
-       
         cFilesMovedIn++;
-        double res, threshold;
-        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy(), res, threshold))
+        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy()))        {
+            CFileInformation& aOldFile = oldfile->second;
+            CFileInformation& aNewFile = newfile->second;
+            
+            double res, threshold;
+            if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy(), res, threshold))
+            {
+                cHighEntropyReplaces++;
+            }
+        }
+
+        if (newfile->second.fDeleted)
         {
-            cHighEntropyReplaces++;
+            cFilesDeleted--;
+            newfile->second.fDeleted = false;
+        }
+        else
+        {
+            cFilesDeleted++;
         }
     }
-
-    void ReplaceFiles(CFileInformation& aOldFile, CFileInformation& aNewFile);
 
     ULONG GetPid()
     {
@@ -234,8 +245,11 @@ public:
         cbFilesRead += cbRead;
     }
 
-    void ChangeExtension()
+    void ChangeExtension(LPCWSTR wszOldFileExtension, LPCWSTR wszNewFileExtension)
     {
+        UNREFERENCED_PARAMETER(wszOldFileExtension);
+        aWriteExtensions.insert(wszNewFileExtension);
+
         cChangedExtensions++;
     }
 
@@ -307,9 +321,16 @@ public:
         //
         LPCWSTR wszOldFileExtension = GetFileExtensionFromFileName(pSetInformation->GetInitialFileName());
         LPCWSTR wszNewFileExtension = GetFileExtensionFromFileName(pSetInformation->GetNewFileName());
-        if (wszOldFileExtension || wszNewFileExtension)
+        
+        if (ExtensionChanged(wszOldFileExtension, wszNewFileExtension))
         {
-            ChangeExtension();
+            ChangeExtension(wszOldFileExtension, wszNewFileExtension);
+        }
+
+        if (newfile != gFiles.end())
+        {
+            // File was replaced or returned back
+            ReplaceFile(newfile, oldfile);
         }
 
         //
@@ -320,31 +341,29 @@ public:
             RenameFile();
         }
         else
-            if (!fOldFileFromSafeZone && fNewFileFromSafeZone)
-            {
-                if (newfile != gFiles.end() && oldfile != gFiles.end())
-                {
-                    MoveFileIn(oldfile->second, newfile->second);
-                }
-            }
-            else
-                if (fOldFileFromSafeZone && !fNewFileFromSafeZone)
-                {
-                    if (oldfile != gFiles.end())
-                    {
-                        MoveFileOut(oldfile->second);
-                    }
-                }
-                else
-                    if (!fOldFileFromSafeZone && !fNewFileFromSafeZone)
-                    {
-                        // TODO: support this case
-                        ASSERT(false);
-                    }
-                    else
-                    {
-                        ASSERT(false);
-                    }
+        if (!fOldFileFromSafeZone && fNewFileFromSafeZone)
+        {
+            // Replaces are counted in ReplaceFile(newfile, oldfile);
+            MoveFileIn();
+        }
+        else
+        if (fOldFileFromSafeZone && !fNewFileFromSafeZone)
+        {
+            // Operation is done on file from safe folder, but its not in our base. Did we miss CreateFile()?
+            ASSERT(oldfile != gFiles.end());
+            
+            MoveFileOut(oldfile->second);
+        }
+        else
+        if (!fOldFileFromSafeZone && !fNewFileFromSafeZone)
+        {
+            // TODO: support this case
+            ASSERT(false);
+        }
+        else
+        {
+            ASSERT(false);
+        }
 
         //
         // UpdateFilenamesGlobals
@@ -354,20 +373,21 @@ public:
             // New file is replaced or is returned back
             if (oldfile != gFiles.end())
             {
-
-                CFileInformation newFileInfo(oldfile->second);
-                newFileInfo.UpdateFileName(pSetInformation->GetNewFileName());
+                CFileInformation aNewFileInfo(oldfile->second);
+                aNewFileInfo.UpdateFileName(pSetInformation->GetNewFileName());
 
                 gFiles.erase(oldfile);
+                gFiles.erase(newfile);
 
-                auto file = gFiles.insert({ pSetInformation->GetNewFileName(), newFileInfo });
-                file.first->second.RegisterAccess(pOperation, this);
+                auto file = gFiles.insert({ pSetInformation->GetNewFileName(), aNewFileInfo });
+                ASSERT(file.second == true);
             }
             else
             {
                 // Absolutely unknown file replacing file from the safe zone
+                gFiles.erase(newfile);
                 auto file = gFiles.insert({ pSetInformation->GetNewFileName(), CFileInformation(pSetInformation->GetNewFileName()) });
-                file.first->second.RegisterAccess(pOperation, this);
+                ASSERT(file.second == true);
             }
         }
         else
@@ -381,12 +401,12 @@ public:
                 gFiles.erase(oldfile);
 
                 auto file = gFiles.insert({ pSetInformation->GetNewFileName(), newFileInfo });
-                file.first->second.RegisterAccess(pOperation, this);
+                ASSERT(file.second == true);
             }
             else
             {
                 auto file = gFiles.insert({ pSetInformation->GetNewFileName(), CFileInformation(pSetInformation->GetNewFileName()) });
-                file.first->second.RegisterAccess(pOperation, this);
+                ASSERT(file.second == true);
             }
         }
     }
@@ -397,6 +417,26 @@ public:
     }
 
 private:
+    static bool ExtensionChanged(LPCWSTR wszOldFileExtension, LPCWSTR wszNewFileExtension)
+    {
+        if (wszOldFileExtension == NULL && wszOldFileExtension == NULL)
+        {
+            return false;
+        }
+
+        if (wszOldFileExtension == NULL && wszOldFileExtension != NULL)
+        {
+            return true;
+        }
+
+        if (wszOldFileExtension != NULL && wszOldFileExtension == NULL)
+        {
+            return true;
+        }
+
+        return wcscmp(wszOldFileExtension, wszNewFileExtension);
+    }
+
     static bool IsFileFromSafeDir(wstring wszFileName, wstring wsdDirName)
     {
         return wcsstr(wszFileName.c_str(), wsdDirName.c_str()) != NULL;
