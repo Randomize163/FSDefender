@@ -99,8 +99,6 @@ public:
 
     bool IsMalicious()
     {
-        PrintInfo();
-
         ULONG uTrigger = 0;
         double ET, ETT, FDT, FDTT, FET, FETT, DT, DTT, RT, RTT, ATT, ATTT, MIT, MITT, CET, CETT, HERT, HERTT;
         bool bET = EntropyTrigger(ET, ETT);
@@ -114,23 +112,24 @@ public:
         bool bHRT = HighEntropyReplacesTrigger(HERT, HERTT);
         uTrigger = bET + bFDT + bFET + bDT + bRT + bATT + bMIT + bCET + bHRT;
 
+        if (cPrint % cPrintFrequency == 0)
+        {
+            printf("EntropyTrigger:      %u |   %f  |   %f  \n", bET, ET, ETT);
+            printf("FileDistanceTrigger: %u |   %f  |   %f  \n", bFDT, FDT, FDTT);
+            printf("FileExtTrigger:      %u |   %f  |   %f  \n", bFET, FET, FETT);
+            printf("DeletionTrigger:     %u |   %f  |   %f  \n", bDT, DT, DTT);
+            printf("RenameTrigger:       %u |   %f  |   %f  \n", bRT, RT, RTT);
+            printf("AccessTypeTrigger    %u |   %f  |   %f  \n", bATT, ATT, ATTT);
+            printf("MoveInTrigger:       %u |   %f  |   %f  \n", bMIT, MIT, MITT);
+            printf("ChangeExtTrigger:    %u |   %f  |   %f  \n", bCET, CET, CETT);
+            printf("HighEntropyReplaces: %u |   %f  |   %f  \n", bHRT, HERT, HERTT);
+        }
+
+        PrintInfo();
+
         if (uTrigger >= 5)
         {
-            if (cMaliciousPrint % 1000 == 0)
-            {
-                printf("Process %u is malicious:\n", uPid);
-                printf("EntropyTrigger:      %u |   %f  |   %f  \n", bET, ET, ETT);
-                printf("FileDistanceTrigger: %u |   %f  |   %f  \n", bFDT, FDT, FDTT);
-                printf("FileExtTrigger:      %u |   %f  |   %f  \n", bFET, FET, FETT);
-                printf("DeletionTrigger:     %u |   %f  |   %f  \n", bDT, DT, DTT);
-                printf("RenameTrigger:       %u |   %f  |   %f  \n", bRT, RT, RTT);
-                printf("AccessTypeTrigger    %u |   %f  |   %f  \n", bATT, ATT, ATTT);
-                printf("MoveInTrigger:       %u |   %f  |   %f  \n", bMIT, MIT, MITT);
-                printf("ChangeExtTrigger:    %u |   %f  |   %f  \n", bCET, CET, CETT);
-                printf("HighEntropyReplaces: %u |   %f  |   %f  \n", bHRT, HERT, HERTT);
-                cMaliciousPrint++;
-            }
-
+            printf("<<<<<<<<<< Process %u is malicious >>>>>>>>>\n", uPid);
             return true;
         }
 
@@ -247,12 +246,12 @@ public:
                 << "Moved to folder: " << cFilesMovedIn << endl
                 << "LZJ distance exceeded: " << cLZJDistanceExceed << endl
                 << "File extensions changed: " << cChangedExtensions << " Read: " << aReadExtensions.size() << " Write: " << aWriteExtensions.size() << endl;
-            cout << "Read extensions : ";
+            cout << "Read extensions: ";
             int extCount = 0;
             int maxExtCount = 10;
             for (auto readExtension : aReadExtensions)
             {
-                cout << readExtension.c_str() << " ";
+                printf("%ls ", readExtension.c_str());
                 extCount++;
                 if (extCount == maxExtCount)
                 {
@@ -265,7 +264,7 @@ public:
             cout << "Write extensions : ";
             for (auto writeExtension : aWriteExtensions)
             {
-                cout << writeExtension.c_str() << " ";
+                printf("%ls ", writeExtension.c_str());
                 extCount++;
                 if (extCount == maxExtCount)
                 {
