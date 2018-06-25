@@ -16,7 +16,7 @@
 #define FILE_DISTANCE_RATIO_THRESHOLD 0.10
 #define FILE_DISTANCE_COUNT_THRESHOLD 15
 #define CHANGE_EXTENSION_THRESHOLD 0.25
-#define FILE_EXTENSIONS_THRESHOLD 5
+#define FILE_EXTENSIONS_THRESHOLD 0.25
 #define DELETION_THRESHOLD 0.3
 #define RENAME_THRESHOLD 0.3
 #define ACCESS_TYPE_THRESHOLD 0.9
@@ -80,6 +80,11 @@ public:
         }
     }
 
+    void SetPrintFrequency(size_t cFrequency)
+    {
+        cPrintFrequency = cFrequency;
+    }
+
     void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CFileInformation* pInfo)
     {
         switch (pOperation->uMajorType)
@@ -87,11 +92,13 @@ public:
         case IRP_READ:
         {
             aFileNamesRead.insert(pInfo);
+            aFileNames.insert(pInfo);
             break;
         }
         case IRP_WRITE:
         {
             aFileNamesWrite.insert(pInfo);
+            aFileNames.insert(pInfo);
             break;
         }
         }
@@ -114,6 +121,8 @@ public:
 
         if (cPrint % cPrintFrequency == 0)
         {
+            printf("                         Process <%u>                       \n", uPid);
+            printf("-----Trigger------Result----Calc.-------Threshold--------------\n");
             printf("EntropyTrigger:      %u |   %f  |   %f  \n", bET, ET, ETT);
             printf("FileDistanceTrigger: %u |   %f  |   %f  \n", bFDT, FDT, FDTT);
             printf("FileExtTrigger:      %u |   %f  |   %f  \n", bFET, FET, FETT);
@@ -151,16 +160,18 @@ public:
     bool FileExtensionsTrigger(double& res, double& threshold)
     {
         threshold = FILE_EXTENSIONS_THRESHOLD;
-        if (aReadExtensions.size() < aWriteExtensions.size())
-        {
-            res = 0;
-            return false;
-        }
-
+  
         vector<wstring> aDiff;
-        auto it = set_difference(aReadExtensions.begin(), aReadExtensions.end(), aWriteExtensions.begin(), aWriteExtensions.end(), aDiff.begin());
-        res = (double)(it - aDiff.begin());
-        return res > threshold;
+        auto it = set_symmetric_difference(aReadExtensions.begin(), aReadExtensions.end(), aWriteExtensions.begin(), aWriteExtensions.end(), back_inserter(aDiff));
+        size_t diff = aDiff.size();
+
+        vector<wstring> aUnion;
+        it = set_union(aReadExtensions.begin(), aReadExtensions.end(), aWriteExtensions.begin(), aWriteExtensions.end(), back_inserter(aUnion));
+        size_t uni = aUnion.size();
+
+        res = (double)diff / (double)uni;
+
+        return  res > threshold;
     }
 
     void Kill()
@@ -237,7 +248,8 @@ public:
         if (cPrint % cPrintFrequency == 0 || fUnconditionally)
         {
             printf("\nProcess: %ls PID: %u\n", wszProcessName, uPid);
-            cout << "Read: " << cbFilesRead << " Bytes, Write: " << cbFilesWrite << " Bytes" << endl
+            cout << "Read: " << cbFilesRead / KB << " KBytes, Write: " << cbFilesWrite / KB << " KBytes" << endl
+                << "Files Accessed: " << GetFileAccessedCount() << " Read: " << aFileNamesRead.size() << " Write: " << aFileNamesWrite.size() << endl
                 << "Files Deleted: " << cFilesDeleted << endl
                 << "Files Renamed: " << cFilesRenamed << endl
                 << "Write entropy: " << ((dSumOfWeightedWriteEntropies > 0) ? dSumOfWeightedWriteEntropies / dSumOfWeightsForWriteEntropy : 0) << endl
@@ -245,8 +257,10 @@ public:
                 << "Removed From folder: " << cFilesMovedOut << endl
                 << "Moved to folder: " << cFilesMovedIn << endl
                 << "LZJ distance exceeded: " << cLZJDistanceExceed << endl
-                << "File extensions changed: " << cChangedExtensions << " Read: " << aReadExtensions.size() << " Write: " << aWriteExtensions.size() << endl;
-            cout << "Read extensions: ";
+                << "LZJ distance calculated: " << cLZJDistanceCalculated << endl
+                << "File extensions changed: " << cChangedExtensions << " Read: " << aReadExtensions.size() << " Write: " << aWriteExtensions.size() << endl
+                << "High entropy replaces: " << cHighEntropyReplaces << endl
+                << "Read extensions: ";
             int extCount = 0;
             int maxExtCount = 10;
             for (auto readExtension : aReadExtensions)
@@ -505,7 +519,6 @@ private:
         if (cLZJDistanceCalculated == 0)
         {
             res = 0;
-            threshold = 0;
             return false;
         }
         res = (double)cLZJDistanceExceed / (double)cLZJDistanceCalculated;
@@ -549,7 +562,7 @@ private:
 
     size_t GetFileAccessedCount()
     {
-        return (aFileNamesRead.size() + aFileNamesWrite.size())/2;
+        return aFileNames.size();
     }
 
     bool MoveInTrigger(double& res, double& threshold)
@@ -616,6 +629,7 @@ private:
 
     set<CFileInformation*> aFileNamesRead;
     set<CFileInformation*> aFileNamesWrite;
+    set<CFileInformation*> aFileNames;
 
     set<wstring> aReadExtensions;
     set<wstring> aWriteExtensions;

@@ -330,7 +330,7 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
         LPWSTR wszVolumeName;
         size_t cbVolumeName;
         hr = GetVolumeName(&wszVolumeName, &cbVolumeName, pRelatedObjects->Volume);
-        RETURN_IF_FAILED(hr);
+        RETURN_IF_FAILED_EX(hr);
 
         size_t ceVolumeName = cbVolumeName / 2;
 
@@ -476,7 +476,7 @@ NTSTATUS CFSDefender::ProcessIrp(PFLT_CALLBACK_DATA pData, PCFLT_RELATED_OBJECTS
                         LPWSTR wszNewVolumeName;
                         size_t cbNewVolumeName;
                         hr = GetVolumeName(&wszNewVolumeName, &cbNewVolumeName, pRelatedObjects->Volume);
-                        RETURN_IF_FAILED(hr);
+                        RETURN_IF_FAILED_EX(hr);
 
                         size_t ceNewVolumeName = cbNewVolumeName / 2;
                         size_t ceNewFileName = pNewNameInfo->Name.Length - pNewNameInfo->Volume.Length + cbNewVolumeName + 1;

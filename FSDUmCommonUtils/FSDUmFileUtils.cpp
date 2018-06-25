@@ -17,6 +17,11 @@ LPCWSTR GetFileExtensionFromFileName(LPWSTR wszFileName)
             pLastPoint = wszFileName + cSymbol;
         }
 
+        if (wszFileName[cSymbol] == L'\\')
+        {
+            pLastPoint = NULL;
+        }
+
         cSymbol++;
     }
 
