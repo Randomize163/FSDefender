@@ -200,26 +200,6 @@ public:
     void MoveFileIn()
     {
         cFilesMovedIn++;
-        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy()))        {
-            CFileInformation& aOldFile = oldfile->second;
-            CFileInformation& aNewFile = newfile->second;
-            
-            double res, threshold;
-            if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy(), res, threshold))
-            {
-                cHighEntropyReplaces++;
-            }
-        }
-
-        if (newfile->second.fDeleted)
-        {
-            cFilesDeleted--;
-            newfile->second.fDeleted = false;
-        }
-        else
-        {
-            cFilesDeleted++;
-        }
     }
 
     ULONG GetPid()
@@ -411,6 +391,28 @@ public:
         }
     }
 
+    void ReplaceFile(unordered_map<wstring, CFileInformation>::iterator& oldfile, unordered_map<wstring, CFileInformation>::iterator& newfile)
+    {
+        CFileInformation& aOldFile = oldfile->second;
+        CFileInformation& aNewFile = newfile->second;
+
+        double res, threshold;
+        if (EntropyExceeded(aOldFile.AverageWriteEntropy(), aNewFile.AverageReadEntropy(), res, threshold))
+        {
+            cHighEntropyReplaces++;
+        }
+
+        if (newfile->second.fDeleted)
+        {
+            cFilesDeleted--;
+            newfile->second.fDeleted = false;
+        }
+        else
+        {
+            cFilesDeleted++;
+        }
+    }
+
     bool IsKilled()
     {
         return fIsKilled;
@@ -448,10 +450,13 @@ private:
         {
             res = dAverageWriteEntropy - dAverageReadEntropy;
             threshold = ENTROPY_THRESHOLD(dAverageReadEntropy);
+
             return dAverageWriteEntropy - dAverageReadEntropy > ENTROPY_THRESHOLD(dAverageReadEntropy);
         }
+
         res = dAverageWriteEntropy;
         threshold = WRITE_ENTROPY_TRIGGER;
+
         return dAverageWriteEntropy > WRITE_ENTROPY_TRIGGER;
     }
 
