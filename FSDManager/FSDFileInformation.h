@@ -30,7 +30,7 @@ public:
         , dSumOfWeightsForWriteEntropy(0)
     {}
 
-    void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CProcess* pProcess);
+    void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CProcess* pProcess, LPCWSTR wszScanDir);
 
     void UpdateFileName(wstring wszNewName)
     {

@@ -85,8 +85,13 @@ public:
         cPrintFrequency = cFrequency;
     }
 
-    void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CFileInformation* pInfo)
+    void RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CFileInformation* pInfo, LPCWSTR wszScanDir)
     {
+        if (!IsFileFromSafeDir(pInfo->wszFileName.c_str(), wszScanDir))
+        {
+            return;
+        }
+
         switch (pOperation->uMajorType)
         {
         case IRP_READ:
@@ -119,7 +124,7 @@ public:
         bool bHRT = HighEntropyReplacesTrigger(HERT, HERTT);
         uTrigger = bET + bFDT + bFET + bDT + bRT + bATT + bMIT + bCET + bHRT;
 
-        if (cPrint % cPrintFrequency == 0)
+        if (cPrint % cPrintFrequency == 0 || uTrigger >= 4)
         {
             printf("                         Process <%u>                       \n", uPid);
             printf("-----Trigger------Result----Calc.-------Threshold--------------\n");
@@ -136,7 +141,7 @@ public:
 
         PrintInfo();
 
-        if (uTrigger >= 5)
+        if (uTrigger >= 4)
         {
             printf("<<<<<<<<<< Process %u is malicious >>>>>>>>>\n", uPid);
             return true;
@@ -452,9 +457,9 @@ private:
         return wcscmp(wszOldFileExtension, wszNewFileExtension);
     }
 
-    static bool IsFileFromSafeDir(wstring wszFileName, wstring wsdDirName)
+    static bool IsFileFromSafeDir(LPCWSTR wszFileName, LPCWSTR wsdDirName)
     {
-        return wcsstr(wszFileName.c_str(), wsdDirName.c_str()) != NULL;
+        return wcsstr(wszFileName, wsdDirName) != NULL;
     }
 
     static bool EntropyExceeded(double dAverageWriteEntropy, double dAverageReadEntropy, double& res, double& threshold)

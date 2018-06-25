@@ -4,12 +4,12 @@
 #include "LZJD.h"
 #include "MurmurHash3.h"
 
-void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CProcess* pProcess)
+void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CProcess* pProcess, LPCWSTR wszScanDir)
 {
     // add exstension to process
     pProcess->AddFileExstension(pOperation);
 
-    pProcess->RegisterAccess(pOperation, this);
+    pProcess->RegisterAccess(pOperation, this, wszScanDir);
 
     // add process to hash
     aProcesses.insert({ pProcess->GetPid() , pProcess });
@@ -68,7 +68,7 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
 
         DWORD dwRead = DIGEST_SIZE;
         hr = UtilReadFile(hFile, pBuffer.Get(), &dwRead);
-        VOID_IF_FAILED(hr);
+        VOID_IF_FAILED_EX(hr);
 
         LZJvalue = digest(DIGEST_SIZE, pBuffer.Get(), dwRead);
         break;
@@ -112,7 +112,7 @@ void CFileInformation::RegisterAccess(FSD_OPERATION_DESCRIPTION* pOperation, CPr
 
             DWORD dwRead = DIGEST_SIZE;
             hr = UtilReadFile(hFile, pBuffer.Get(), &dwRead);
-            VOID_IF_FAILED(hr);
+            VOID_IF_FAILED_EX(hr);
 
             vector<int> LZJnewVaue = digest(DIGEST_SIZE, pBuffer.Get(), dwRead);
 
