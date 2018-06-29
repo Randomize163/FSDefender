@@ -25,6 +25,7 @@
 using namespace std;
 
 extern unordered_map<wstring, CFileInformation> gFiles;
+extern bool g_fKillMode;
 
 class CProcess
 {
@@ -124,7 +125,7 @@ public:
         bool bHRT = HighEntropyReplacesTrigger(HERT, HERTT);
         uTrigger = bET + bFDT + bFET + bDT + bRT + bATT + bMIT + bCET + bHRT;
 
-        if (cPrint % cPrintFrequency == 0 || uTrigger >= 4)
+        if (cPrint % cPrintFrequency == 0 || (uTrigger >= 4 && g_fKillMode))
         {
             printf("                         Process <%u>                       \n", uPid);
             printf("-----Trigger------Result----Calc.-------Threshold--------------\n");
@@ -137,13 +138,16 @@ public:
             printf("MoveInTrigger:       %u |   %f  |   %f  \n", bMIT, MIT, MITT);
             printf("ChangeExtTrigger:    %u |   %f  |   %f  \n", bCET, CET, CETT);
             printf("HighEntropyReplaces: %u |   %f  |   %f  \n", bHRT, HERT, HERTT);
+            if (uTrigger >= 4)
+            {
+                printf("<<<<<<<<<< Process %u is malicious >>>>>>>>>\n", uPid);
+            }
         }
 
         PrintInfo();
 
         if (uTrigger >= 4)
         {
-            printf("<<<<<<<<<< Process %u is malicious >>>>>>>>>\n", uPid);
             return true;
         }
 
@@ -444,12 +448,12 @@ private:
             return false;
         }
 
-        if (wszOldFileExtension == NULL && wszOldFileExtension != NULL)
+        if (wszOldFileExtension == NULL && wszNewFileExtension != NULL)
         {
             return true;
         }
 
-        if (wszOldFileExtension != NULL && wszOldFileExtension == NULL)
+        if (wszOldFileExtension != NULL && wszNewFileExtension == NULL)
         {
             return true;
         }
@@ -459,6 +463,11 @@ private:
 
     static bool IsFileFromSafeDir(LPCWSTR wszFileName, LPCWSTR wsdDirName)
     {
+        if (!wszFileName || !wsdDirName)
+        {
+            return false;
+        }
+
         return wcsstr(wszFileName, wsdDirName) != NULL;
     }
 
