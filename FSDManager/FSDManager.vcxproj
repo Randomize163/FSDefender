@@ -35,7 +35,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="FSDFileExtension.cpp" />
     <ClCompile Include="FSDFileInformation.cpp" />
     <ClCompile Include="FSDManager.cpp" />
     <ClCompile Include="FSDProcess.cpp" />
@@ -44,7 +43,6 @@
     <ResourceCompile Include="FSDManager.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="FSDFileExtension.h" />
     <ClInclude Include="FSDFileInformation.h" />
     <ClInclude Include="FSDProcess.h" />
   </ItemGroup>
@@ -130,9 +128,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDUmCommonUtils;C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonUtils;C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonDefs;$(IncludePath)</IncludePath>
-    <SourcePath>C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonDefs;C:\Users\Randomize\Documents\Cloud\Study\Project in Ransomware\Projects\FSDefender\FSDCommonUtils;$(VC_SourcePath);</SourcePath>
+    <IncludePath>$(SolutionDir)\LZJDistance;$(SolutionDir)\FSDUmCommonUtils;$(SolutionDir)\FSDCommonDefs;$(SolutionDir)\FSDCommonUtils;$(IncludePath)</IncludePath>
+    <SourcePath>$(VC_SourcePath);</SourcePath>
     <LinkIncremental>true</LinkIncremental>
+    <LibraryPath>$(SolutionDir)\x64\Debug;$(VCInstallDir)lib\onecore\amd64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>$(SolutionDir)\LZJDistance;$(SolutionDir)\FSDUmCommonUtils;$(SolutionDir)\FSDCommonDefs;$(SolutionDir)\FSDCommonUtils;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
+    <LibraryPath>$(SolutionDir)\x64\Release;$(VCInstallDir)lib\onecore\amd64;$(LibraryPath)</LibraryPath>
+    <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -156,13 +160,13 @@
       <PreprocessorDefinitions>_DEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
-      <AdditionalIncludeDirectories>$(SolutionDir)\LZJDistance;$(SolutionDir)\FSDUmCommonUtils;$(SolutionDir)\FSDCommonDefs;$(SolutionDir)\FSDCommonUtils;$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <CompileAsManaged>false</CompileAsManaged>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
       <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;FSDUmCommonUtils.lib;Shlwapi.lib;LZJDistance.lib;</AdditionalDependencies>
-      <AdditionalLibraryDirectories>$(SolutionDir)\x64\Debug;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
       <LinkStatus>
       </LinkStatus>
@@ -175,11 +179,22 @@
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <PreprocessorDefinitions>WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;WINAPI_FAMILY=WINAPI_FAMILY_DESKTOP_APP;WINAPI_PARTITION_DESKTOP=1;WINAPI_PARTITION_SYSTEM=1;WINAPI_PARTITION_APP=1;WINAPI_PARTITION_PC_APP=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
+      <AdditionalIncludeDirectories>$(IntDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <CompileAsManaged>false</CompileAsManaged>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib</AdditionalDependencies>
+      <AdditionalDependencies>%(AdditionalDependencies);onecoreuap.lib;FSDUmCommonUtils.lib;Shlwapi.lib;LZJDistance.lib;</AdditionalDependencies>
+      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
+      <AdditionalOptions>/NODEFAULTLIB:MSVCRTD %(AdditionalOptions)</AdditionalOptions>
     </Link>
+    <ProjectReference>
+      <UseLibraryDependencyInputs>true</UseLibraryDependencyInputs>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|ARM'">
     <ClCompile>

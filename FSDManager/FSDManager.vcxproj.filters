@@ -21,9 +21,6 @@
     <ClCompile Include="FSDFileInformation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FSDFileExtension.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="FSDProcess.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -35,9 +32,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FSDFileInformation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FSDFileExtension.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FSDProcess.h">

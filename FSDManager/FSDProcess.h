@@ -1,6 +1,5 @@
 #pragma once
 
-#include "FSDFileExtension.h"
 #include "FSDFileInformation.h"
 #include "FSDThreadUtils.h"
 #include "FSDUmFileUtils.h"
