@@ -96,12 +96,12 @@ public:
 
     T& operator*() const
     {
-        return *m_p; 
+        return *this->m_p; 
     }
 
     T* operator->() const 
     { 
-        return m_p; 
+        return this->m_p;
     }
 
     virtual void Release() override
